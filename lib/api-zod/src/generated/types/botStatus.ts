@@ -12,10 +12,14 @@ export interface BotStatus {
   strategy: string | null;
   /** @nullable */
   riskLevel: string | null;
+  /** @nullable */
+  timeframe: string | null;
   symbols: string[];
   tradesExecuted: number;
   /** @nullable */
   startedAt: string | null;
   profitLoss: number;
   status: string;
+  currentLot: number;
+  winStreak: number;
 }

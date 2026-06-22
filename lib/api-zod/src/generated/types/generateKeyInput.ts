@@ -6,9 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface BotStartInput {
-  strategy: string;
-  riskLevel: string;
-  symbols?: string[];
-  timeframe?: string;
+export interface GenerateKeyInput {
+  plan: string;
+  expiryDays: number;
 }

@@ -20,6 +20,9 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  ActivationKey,
+  AdminOverview,
+  AdminUserSummary,
   AuthResult,
   Balance,
   BotStartInput,
@@ -27,6 +30,7 @@ import type {
   Deposit,
   DepositInput,
   ErrorResponse,
+  GenerateKeyInput,
   HealthStatus,
   LoginInput,
   MarketSummary,
@@ -1449,6 +1453,532 @@ export function useGetTradeStats<TData = Awaited<ReturnType<typeof getTradeStats
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetTradeStatsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetAdminOverviewUrl = () => {
+
+
+
+
+  return `/api/admin/overview`
+}
+
+/**
+ * @summary Admin platform overview stats
+ */
+export const getAdminOverview = async ( options?: RequestInit): Promise<AdminOverview> => {
+
+  return customFetch<AdminOverview>(getGetAdminOverviewUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAdminOverviewQueryKey = () => {
+    return [
+    `/api/admin/overview`
+    ] as const;
+    }
+
+
+export const getGetAdminOverviewQueryOptions = <TData = Awaited<ReturnType<typeof getAdminOverview>>, TError = ErrorType<ErrorResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAdminOverview>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAdminOverviewQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAdminOverview>>> = ({ signal }) => getAdminOverview({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAdminOverview>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAdminOverviewQueryResult = NonNullable<Awaited<ReturnType<typeof getAdminOverview>>>
+export type GetAdminOverviewQueryError = ErrorType<ErrorResponse>
+
+
+/**
+ * @summary Admin platform overview stats
+ */
+
+export function useGetAdminOverview<TData = Awaited<ReturnType<typeof getAdminOverview>>, TError = ErrorType<ErrorResponse>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAdminOverview>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAdminOverviewQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetAdminUsersUrl = () => {
+
+
+
+
+  return `/api/admin/users`
+}
+
+/**
+ * @summary List all users with stats
+ */
+export const getAdminUsers = async ( options?: RequestInit): Promise<AdminUserSummary[]> => {
+
+  return customFetch<AdminUserSummary[]>(getGetAdminUsersUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAdminUsersQueryKey = () => {
+    return [
+    `/api/admin/users`
+    ] as const;
+    }
+
+
+export const getGetAdminUsersQueryOptions = <TData = Awaited<ReturnType<typeof getAdminUsers>>, TError = ErrorType<ErrorResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAdminUsers>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAdminUsersQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAdminUsers>>> = ({ signal }) => getAdminUsers({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAdminUsers>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAdminUsersQueryResult = NonNullable<Awaited<ReturnType<typeof getAdminUsers>>>
+export type GetAdminUsersQueryError = ErrorType<ErrorResponse>
+
+
+/**
+ * @summary List all users with stats
+ */
+
+export function useGetAdminUsers<TData = Awaited<ReturnType<typeof getAdminUsers>>, TError = ErrorType<ErrorResponse>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAdminUsers>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAdminUsersQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getAdminToggleUserUrl = (userId: string,) => {
+
+
+
+
+  return `/api/admin/users/${userId}/toggle`
+}
+
+/**
+ * @summary Toggle user active status
+ */
+export const adminToggleUser = async (userId: string, options?: RequestInit): Promise<AdminUserSummary> => {
+
+  return customFetch<AdminUserSummary>(getAdminToggleUserUrl(userId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getAdminToggleUserMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminToggleUser>>, TError,{userId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminToggleUser>>, TError,{userId: string}, TContext> => {
+
+const mutationKey = ['adminToggleUser'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminToggleUser>>, {userId: string}> = (props) => {
+          const {userId} = props ?? {};
+
+          return  adminToggleUser(userId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminToggleUserMutationResult = NonNullable<Awaited<ReturnType<typeof adminToggleUser>>>
+
+    export type AdminToggleUserMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Toggle user active status
+ */
+export const useAdminToggleUser = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminToggleUser>>, TError,{userId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminToggleUser>>,
+        TError,
+        {userId: string},
+        TContext
+      > => {
+      return useMutation(getAdminToggleUserMutationOptions(options));
+    }
+
+export const getGetActivationKeysUrl = () => {
+
+
+
+
+  return `/api/admin/activation-keys`
+}
+
+/**
+ * @summary List activation keys
+ */
+export const getActivationKeys = async ( options?: RequestInit): Promise<ActivationKey[]> => {
+
+  return customFetch<ActivationKey[]>(getGetActivationKeysUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetActivationKeysQueryKey = () => {
+    return [
+    `/api/admin/activation-keys`
+    ] as const;
+    }
+
+
+export const getGetActivationKeysQueryOptions = <TData = Awaited<ReturnType<typeof getActivationKeys>>, TError = ErrorType<ErrorResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getActivationKeys>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetActivationKeysQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getActivationKeys>>> = ({ signal }) => getActivationKeys({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getActivationKeys>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetActivationKeysQueryResult = NonNullable<Awaited<ReturnType<typeof getActivationKeys>>>
+export type GetActivationKeysQueryError = ErrorType<ErrorResponse>
+
+
+/**
+ * @summary List activation keys
+ */
+
+export function useGetActivationKeys<TData = Awaited<ReturnType<typeof getActivationKeys>>, TError = ErrorType<ErrorResponse>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getActivationKeys>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetActivationKeysQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGenerateActivationKeyUrl = () => {
+
+
+
+
+  return `/api/admin/activation-keys`
+}
+
+/**
+ * @summary Generate a new activation key
+ */
+export const generateActivationKey = async (generateKeyInput: GenerateKeyInput, options?: RequestInit): Promise<ActivationKey> => {
+
+  return customFetch<ActivationKey>(getGenerateActivationKeyUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      generateKeyInput,)
+  }
+);}
+
+
+
+
+export const getGenerateActivationKeyMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof generateActivationKey>>, TError,{data: BodyType<GenerateKeyInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof generateActivationKey>>, TError,{data: BodyType<GenerateKeyInput>}, TContext> => {
+
+const mutationKey = ['generateActivationKey'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof generateActivationKey>>, {data: BodyType<GenerateKeyInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  generateActivationKey(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type GenerateActivationKeyMutationResult = NonNullable<Awaited<ReturnType<typeof generateActivationKey>>>
+    export type GenerateActivationKeyMutationBody = BodyType<GenerateKeyInput>
+    export type GenerateActivationKeyMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Generate a new activation key
+ */
+export const useGenerateActivationKey = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof generateActivationKey>>, TError,{data: BodyType<GenerateKeyInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof generateActivationKey>>,
+        TError,
+        {data: BodyType<GenerateKeyInput>},
+        TContext
+      > => {
+      return useMutation(getGenerateActivationKeyMutationOptions(options));
+    }
+
+export const getGetAdminAllTradesUrl = () => {
+
+
+
+
+  return `/api/admin/all-trades`
+}
+
+/**
+ * @summary All trades across all users
+ */
+export const getAdminAllTrades = async ( options?: RequestInit): Promise<Trade[]> => {
+
+  return customFetch<Trade[]>(getGetAdminAllTradesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAdminAllTradesQueryKey = () => {
+    return [
+    `/api/admin/all-trades`
+    ] as const;
+    }
+
+
+export const getGetAdminAllTradesQueryOptions = <TData = Awaited<ReturnType<typeof getAdminAllTrades>>, TError = ErrorType<ErrorResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAdminAllTrades>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAdminAllTradesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAdminAllTrades>>> = ({ signal }) => getAdminAllTrades({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAdminAllTrades>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAdminAllTradesQueryResult = NonNullable<Awaited<ReturnType<typeof getAdminAllTrades>>>
+export type GetAdminAllTradesQueryError = ErrorType<ErrorResponse>
+
+
+/**
+ * @summary All trades across all users
+ */
+
+export function useGetAdminAllTrades<TData = Awaited<ReturnType<typeof getAdminAllTrades>>, TError = ErrorType<ErrorResponse>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAdminAllTrades>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAdminAllTradesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetAdminAllDepositsUrl = () => {
+
+
+
+
+  return `/api/admin/all-deposits`
+}
+
+/**
+ * @summary All deposits across all users
+ */
+export const getAdminAllDeposits = async ( options?: RequestInit): Promise<Deposit[]> => {
+
+  return customFetch<Deposit[]>(getGetAdminAllDepositsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAdminAllDepositsQueryKey = () => {
+    return [
+    `/api/admin/all-deposits`
+    ] as const;
+    }
+
+
+export const getGetAdminAllDepositsQueryOptions = <TData = Awaited<ReturnType<typeof getAdminAllDeposits>>, TError = ErrorType<ErrorResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAdminAllDeposits>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAdminAllDepositsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAdminAllDeposits>>> = ({ signal }) => getAdminAllDeposits({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAdminAllDeposits>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAdminAllDepositsQueryResult = NonNullable<Awaited<ReturnType<typeof getAdminAllDeposits>>>
+export type GetAdminAllDepositsQueryError = ErrorType<ErrorResponse>
+
+
+/**
+ * @summary All deposits across all users
+ */
+
+export function useGetAdminAllDeposits<TData = Awaited<ReturnType<typeof getAdminAllDeposits>>, TError = ErrorType<ErrorResponse>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAdminAllDeposits>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAdminAllDepositsQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

@@ -13,6 +13,7 @@ import Mt5Page from "@/pages/mt5";
 import DepositsPage from "@/pages/deposits";
 import TradesPage from "@/pages/trades";
 import SettingsPage from "@/pages/settings";
+import AdminPage from "@/pages/admin";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -41,6 +42,14 @@ function ProtectedRoute({ component: Component }: { component: React.ComponentTy
   return <Component />;
 }
 
+function AdminRoute({ component: Component }: { component: React.ComponentType }) {
+  const { user, isLoading } = useAuth();
+  if (isLoading) return <Spinner />;
+  if (!user) return <Redirect to="/login" />;
+  if (!user.isAdmin) return <Redirect to="/dashboard" />;
+  return <Component />;
+}
+
 function PublicRoute({ component: Component }: { component: React.ComponentType }) {
   const { user, isLoading } = useAuth();
   if (isLoading) return <Spinner />;
@@ -51,36 +60,17 @@ function PublicRoute({ component: Component }: { component: React.ComponentType 
 function Router() {
   return (
     <Switch>
-      <Route path="/">
-        <Redirect to="/dashboard" />
-      </Route>
-      <Route path="/login">
-        <PublicRoute component={Login} />
-      </Route>
-      <Route path="/register">
-        <PublicRoute component={Register} />
-      </Route>
-      <Route path="/verify-otp">
-        <VerifyOtp />
-      </Route>
-      <Route path="/dashboard">
-        <ProtectedRoute component={Dashboard} />
-      </Route>
-      <Route path="/bot">
-        <ProtectedRoute component={BotPage} />
-      </Route>
-      <Route path="/mt5">
-        <ProtectedRoute component={Mt5Page} />
-      </Route>
-      <Route path="/deposits">
-        <ProtectedRoute component={DepositsPage} />
-      </Route>
-      <Route path="/trades">
-        <ProtectedRoute component={TradesPage} />
-      </Route>
-      <Route path="/settings">
-        <ProtectedRoute component={SettingsPage} />
-      </Route>
+      <Route path="/"><Redirect to="/dashboard" /></Route>
+      <Route path="/login"><PublicRoute component={Login} /></Route>
+      <Route path="/register"><PublicRoute component={Register} /></Route>
+      <Route path="/verify-otp"><VerifyOtp /></Route>
+      <Route path="/dashboard"><ProtectedRoute component={Dashboard} /></Route>
+      <Route path="/bot"><ProtectedRoute component={BotPage} /></Route>
+      <Route path="/mt5"><ProtectedRoute component={Mt5Page} /></Route>
+      <Route path="/deposits"><ProtectedRoute component={DepositsPage} /></Route>
+      <Route path="/trades"><ProtectedRoute component={TradesPage} /></Route>
+      <Route path="/settings"><ProtectedRoute component={SettingsPage} /></Route>
+      <Route path="/admin"><AdminRoute component={AdminPage} /></Route>
       <Route component={NotFound} />
     </Switch>
   );

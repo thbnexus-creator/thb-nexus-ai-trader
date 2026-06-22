@@ -69,8 +69,9 @@ export interface Ticker {
   direction: string;
   signal: string;
   signalStrength: string;
-  ema5: number;
-  ema15: number;
+  ema9: number;
+  ema100: number;
+  rsi: number;
 }
 
 export interface MarketSummary {
@@ -84,6 +85,7 @@ export interface BotStartInput {
   strategy: string;
   riskLevel: string;
   symbols?: string[];
+  timeframe?: string;
 }
 
 export interface BotStatus {
@@ -92,12 +94,16 @@ export interface BotStatus {
   strategy: string | null;
   /** @nullable */
   riskLevel: string | null;
+  /** @nullable */
+  timeframe: string | null;
   symbols: string[];
   tradesExecuted: number;
   /** @nullable */
   startedAt: string | null;
   profitLoss: number;
   status: string;
+  currentLot: number;
+  winStreak: number;
 }
 
 export interface Mt5Input {
@@ -171,5 +177,53 @@ export interface TradeStats {
   bestTrade: number;
   worstTrade: number;
   avgProfit: number;
+}
+
+export interface AdminOverview {
+  totalUsers: number;
+  verifiedUsers: number;
+  activeUsers: number;
+  totalDeposited: number;
+  totalTrades: number;
+  totalPnl: number;
+  activeBots: number;
+  mt5Connected: number;
+  activationKeys: number;
+}
+
+export interface AdminUserSummary {
+  id: string;
+  email: string;
+  name: string;
+  isAdmin: boolean;
+  isVerified: boolean;
+  isActive: boolean;
+  createdAt: string;
+  balance: number;
+  totalDeposited: number;
+  totalPnl: number;
+  totalTrades: number;
+  winRate: number;
+  botRunning: boolean;
+  mt5Connected: boolean;
+}
+
+export interface ActivationKey {
+  id: string;
+  key: string;
+  plan: string;
+  /** @nullable */
+  usedBy: string | null;
+  /** @nullable */
+  usedAt: string | null;
+  /** @nullable */
+  expiresAt: string | null;
+  createdAt: string;
+  isActive: boolean;
+}
+
+export interface GenerateKeyInput {
+  plan: string;
+  expiryDays: number;
 }
 

@@ -411,6 +411,163 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /admin/overview:
+    get:
+      operationId: getAdminOverview
+      tags: [admin]
+      summary: Admin platform overview stats
+      responses:
+        "200":
+          description: Admin overview
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminOverview"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /admin/users:
+    get:
+      operationId: getAdminUsers
+      tags: [admin]
+      summary: List all users with stats
+      responses:
+        "200":
+          description: User list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminUserSummary"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /admin/users/{userId}/toggle:
+    post:
+      operationId: adminToggleUser
+      tags: [admin]
+      summary: Toggle user active status
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminUserSummary"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /admin/activation-keys:
+    get:
+      operationId: getActivationKeys
+      tags: [admin]
+      summary: List activation keys
+      responses:
+        "200":
+          description: Keys list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ActivationKey"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    post:
+      operationId: generateActivationKey
+      tags: [admin]
+      summary: Generate a new activation key
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenerateKeyInput"
+      responses:
+        "200":
+          description: Generated key
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ActivationKey"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /admin/all-trades:
+    get:
+      operationId: getAdminAllTrades
+      tags: [admin]
+      summary: All trades across all users
+      responses:
+        "200":
+          description: All trades
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Trade"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /admin/all-deposits:
+    get:
+      operationId: getAdminAllDeposits
+      tags: [admin]
+      summary: All deposits across all users
+      responses:
+        "200":
+          description: All deposits
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Deposit"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
 components:
   schemas:
     HealthStatus:
@@ -549,9 +706,11 @@ components:
           type: string
         signalStrength:
           type: string
-        ema5:
+        ema9:
           type: number
-        ema15:
+        ema100:
+          type: number
+        rsi:
           type: number
       required:
         - symbol
@@ -564,8 +723,9 @@ components:
         - direction
         - signal
         - signalStrength
-        - ema5
-        - ema15
+        - ema9
+        - ema100
+        - rsi
 
     MarketSummary:
       type: object
@@ -595,6 +755,8 @@ components:
           type: array
           items:
             type: string
+        timeframe:
+          type: string
       required:
         - strategy
         - riskLevel
@@ -608,6 +770,8 @@ components:
           type: ["string", "null"]
         riskLevel:
           type: ["string", "null"]
+        timeframe:
+          type: ["string", "null"]
         symbols:
           type: array
           items:
@@ -620,15 +784,22 @@ components:
           type: number
         status:
           type: string
+        currentLot:
+          type: number
+        winStreak:
+          type: integer
       required:
         - isRunning
         - strategy
         - riskLevel
+        - timeframe
         - symbols
         - tradesExecuted
         - startedAt
         - profitLoss
         - status
+        - currentLot
+        - winStreak
 
     Mt5Input:
       type: object
@@ -790,3 +961,122 @@ components:
         - bestTrade
         - worstTrade
         - avgProfit
+
+    AdminOverview:
+      type: object
+      properties:
+        totalUsers:
+          type: integer
+        verifiedUsers:
+          type: integer
+        activeUsers:
+          type: integer
+        totalDeposited:
+          type: number
+        totalTrades:
+          type: integer
+        totalPnl:
+          type: number
+        activeBots:
+          type: integer
+        mt5Connected:
+          type: integer
+        activationKeys:
+          type: integer
+      required:
+        - totalUsers
+        - verifiedUsers
+        - activeUsers
+        - totalDeposited
+        - totalTrades
+        - totalPnl
+        - activeBots
+        - mt5Connected
+        - activationKeys
+
+    AdminUserSummary:
+      type: object
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+        name:
+          type: string
+        isAdmin:
+          type: boolean
+        isVerified:
+          type: boolean
+        isActive:
+          type: boolean
+        createdAt:
+          type: string
+        balance:
+          type: number
+        totalDeposited:
+          type: number
+        totalPnl:
+          type: number
+        totalTrades:
+          type: integer
+        winRate:
+          type: number
+        botRunning:
+          type: boolean
+        mt5Connected:
+          type: boolean
+      required:
+        - id
+        - email
+        - name
+        - isAdmin
+        - isVerified
+        - isActive
+        - createdAt
+        - balance
+        - totalDeposited
+        - totalPnl
+        - totalTrades
+        - winRate
+        - botRunning
+        - mt5Connected
+
+    ActivationKey:
+      type: object
+      properties:
+        id:
+          type: string
+        key:
+          type: string
+        plan:
+          type: string
+        usedBy:
+          type: ["string", "null"]
+        usedAt:
+          type: ["string", "null"]
+        expiresAt:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+        isActive:
+          type: boolean
+      required:
+        - id
+        - key
+        - plan
+        - usedBy
+        - usedAt
+        - expiresAt
+        - createdAt
+        - isActive
+
+    GenerateKeyInput:
+      type: object
+      properties:
+        plan:
+          type: string
+        expiryDays:
+          type: integer
+      required:
+        - plan
+        - expiryDays

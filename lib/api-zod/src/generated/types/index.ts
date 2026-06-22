@@ -6,6 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './activationKey';
+export * from './adminOverview';
+export * from './adminUserSummary';
 export * from './authResult';
 export * from './balance';
 export * from './botStartInput';
@@ -13,6 +16,7 @@ export * from './botStatus';
 export * from './deposit';
 export * from './depositInput';
 export * from './errorResponse';
+export * from './generateKeyInput';
 export * from './healthStatus';
 export * from './loginInput';
 export * from './marketSummary';

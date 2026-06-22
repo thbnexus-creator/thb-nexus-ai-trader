@@ -17,6 +17,7 @@ export interface Ticker {
   direction: string;
   signal: string;
   signalStrength: string;
-  ema5: number;
-  ema15: number;
+  ema9: number;
+  ema100: number;
+  rsi: number;
 }

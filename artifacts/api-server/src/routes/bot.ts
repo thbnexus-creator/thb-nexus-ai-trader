@@ -17,19 +17,22 @@ router.post("/bot/start", requireAuth, async (req, res): Promise<void> => {
     return;
   }
 
-  const { strategy, riskLevel, symbols } = parsed.data;
-  const status = store.startBot(req.session.userId!, strategy, riskLevel, symbols ?? []);
+  const { strategy, riskLevel, symbols, timeframe } = parsed.data;
+  const status = store.startBot(
+    req.session.userId!,
+    strategy,
+    riskLevel,
+    symbols ?? [],
+    timeframe ?? "5min",
+  );
 
-  req.log.info({ userId: req.session.userId, strategy, riskLevel }, "Bot started");
-
+  req.log.info({ userId: req.session.userId, strategy, riskLevel, timeframe }, "Bot started");
   res.json(status);
 });
 
 router.post("/bot/stop", requireAuth, async (req, res): Promise<void> => {
   const status = store.stopBot(req.session.userId!);
-
   req.log.info({ userId: req.session.userId }, "Bot stopped");
-
   res.json(status);
 });
 

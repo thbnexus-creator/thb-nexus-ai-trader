@@ -8,25 +8,34 @@ function SignalBadge({ signal, strength }: { signal: string; strength: string })
     : signal === "SELL"
     ? "bg-destructive/15 text-destructive border-destructive/30"
     : "bg-chart-4/15 text-chart-4 border-chart-4/30";
-  const dot = strength === "strong" ? "w-2 h-2" : strength === "moderate" ? "w-1.5 h-1.5" : "w-1 h-1";
-  const dotCls = signal === "BUY" ? "bg-chart-2" : signal === "SELL" ? "bg-destructive" : "bg-chart-4";
-
+  const dotColor = signal === "BUY" ? "bg-chart-2" : signal === "SELL" ? "bg-destructive" : "bg-chart-4";
   return (
     <span className={`inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-full border uppercase tracking-wider ${cls}`}>
-      <span className={`${dot} ${dotCls} rounded-full`} />
+      <span className={`w-1.5 h-1.5 ${dotColor} rounded-full`} />
       {signal}
     </span>
   );
 }
 
-function StatCard({ label, value, sub, color = "default" }: { label: string; value: string; sub?: string; color?: "primary" | "green" | "red" | "yellow" | "default" }) {
-  const valClass = color === "primary" ? "text-primary ticker-glow" : color === "green" ? "text-profit" : color === "red" ? "text-loss" : color === "yellow" ? "text-chart-4" : "text-foreground";
-  const borderClass = color === "primary" ? "border-primary/20 bg-primary/3" : color === "green" ? "border-profit/20" : color === "red" ? "border-loss/20" : "border-card-border";
+function RsiBar({ rsi }: { rsi: number }) {
+  const color = rsi > 70 ? "bg-destructive" : rsi < 30 ? "bg-chart-2" : "bg-chart-4";
+  const zone = rsi > 70 ? "text-destructive" : rsi < 30 ? "text-chart-2" : "text-chart-4";
+  const label = rsi > 70 ? "Overbought" : rsi < 30 ? "Oversold" : "Neutral";
   return (
-    <div className={`bg-card border rounded-xl p-4 ${borderClass}`}>
-      <div className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest mb-2">{label}</div>
-      <div className={`text-xl sm:text-2xl font-bold font-mono leading-none ${valClass}`}>{value}</div>
-      {sub && <div className="text-[11px] text-muted-foreground mt-1.5 leading-none">{sub}</div>}
+    <div>
+      <div className="flex justify-between items-center mb-1">
+        <span className="text-[9px] text-muted-foreground">RSI4</span>
+        <span className={`text-[9px] font-bold ${zone}`}>{rsi.toFixed(1)} · {label}</span>
+      </div>
+      <div className="h-1.5 bg-muted rounded-full overflow-hidden relative">
+        {/* 30 / 70 zone markers */}
+        <div className="absolute top-0 left-[30%] w-px h-full bg-chart-2/40" />
+        <div className="absolute top-0 left-[70%] w-px h-full bg-destructive/40" />
+        <div
+          className={`h-full ${color} rounded-full transition-all duration-700`}
+          style={{ width: `${Math.min(rsi, 100)}%` }}
+        />
+      </div>
     </div>
   );
 }
@@ -39,39 +48,46 @@ function MarketCard({ t }: { t: Ticker }) {
 
   return (
     <div className={`bg-card border rounded-xl p-4 transition-colors ${isUp ? "border-chart-2/20" : "border-destructive/20"}`}>
-      <div className="flex items-start justify-between mb-2">
+      <div className="flex items-start justify-between mb-3">
         <div>
           <div className="text-sm font-bold text-foreground">{t.symbol}</div>
           <div className={`text-[11px] font-semibold mt-0.5 ${isUp ? "text-profit" : "text-loss"}`}>
-            {isUp ? "▲" : "▼"} {isUp ? "+" : ""}{t.changePercent.toFixed(3)}%
+            {isUp ? "▲ +" : "▼ "}{t.changePercent.toFixed(3)}%
           </div>
         </div>
-        <div className="flex flex-col items-end gap-1">
-          <div className={`w-2 h-2 rounded-full ${isUp ? "bg-chart-2 glow-green" : "bg-destructive glow-red"} pulse-dot`} />
+        <div className="flex flex-col items-end gap-1.5">
+          <div className={`w-2 h-2 rounded-full pulse-dot ${isUp ? "bg-chart-2 glow-green" : "bg-destructive glow-red"}`} />
           <SignalBadge signal={t.signal} strength={t.signalStrength} />
         </div>
       </div>
 
-      <div className={`text-xl sm:text-2xl font-bold font-mono mb-3 ${isUp ? "text-profit" : "text-loss"}`}>
+      <div className={`text-2xl font-bold font-mono mb-3 ${isUp ? "text-profit" : "text-loss"}`}>
         {t.price.toFixed(dp)}
       </div>
 
-      <div>
-        <div className="h-1.5 bg-muted rounded-full overflow-hidden mb-1.5">
+      {/* RSI bar */}
+      <div className="mb-3">
+        <RsiBar rsi={t.rsi} />
+      </div>
+
+      {/* 24h range */}
+      <div className="mb-2">
+        <div className="h-1.5 bg-muted rounded-full overflow-hidden">
           <div
             className={`h-full rounded-full transition-all duration-500 ${isUp ? "bg-chart-2" : "bg-destructive"}`}
             style={{ width: `${pct}%` }}
           />
         </div>
-        <div className="flex justify-between text-[9px] text-muted-foreground font-mono">
+        <div className="flex justify-between text-[9px] text-muted-foreground font-mono mt-1">
           <span>L {t.low24h.toFixed(dp)}</span>
           <span>H {t.high24h.toFixed(dp)}</span>
         </div>
       </div>
 
-      <div className="mt-2.5 pt-2.5 border-t border-border flex justify-between text-[10px] text-muted-foreground">
-        <span>EMA5 <span className="text-foreground font-mono">{t.ema5.toFixed(dp)}</span></span>
-        <span>Vol {t.volume > 1e6 ? `${(t.volume/1e6).toFixed(2)}M` : `${(t.volume/1000).toFixed(0)}K`}</span>
+      <div className="pt-2 border-t border-border grid grid-cols-2 gap-1 text-[9px]">
+        <div className="text-muted-foreground">EMA9 <span className="text-foreground font-mono">{t.ema9.toFixed(dp)}</span></div>
+        <div className="text-muted-foreground text-right">EMA100 <span className="text-foreground font-mono">{t.ema100.toFixed(dp)}</span></div>
+        <div className="col-span-2 text-muted-foreground">Vol <span className="text-foreground font-mono">{t.volume > 1e6 ? `${(t.volume/1e6).toFixed(2)}M` : `${(t.volume/1000).toFixed(0)}K`}</span></div>
       </div>
     </div>
   );
@@ -82,33 +98,40 @@ function SignalsPanel({ tickers }: { tickers: Ticker[] }) {
     <div className="bg-card border border-card-border rounded-xl p-4">
       <div className="flex items-center gap-2 mb-4">
         <span className="w-1.5 h-1.5 rounded-full bg-primary pulse-dot" />
-        <h2 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">AI Signal Analysis</h2>
-        <span className="ml-auto text-[9px] text-muted-foreground">Demo only · Not financial advice</span>
+        <h2 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex-1">AI Signal Analysis — EMA9 · EMA100 · RSI4</h2>
+        <span className="text-[9px] text-muted-foreground">Demo only</span>
       </div>
       <div className="space-y-3">
         {tickers.map((t) => {
           const dp = t.symbol === "BTCUSD" || t.symbol === "XAUUSD" ? 2 : 5;
           const isUp = t.direction === "up";
-          const strengthLabel = t.signalStrength === "strong" ? "Strong" : t.signalStrength === "moderate" ? "Moderate" : "Weak";
-          const conf = t.signalStrength === "strong" ? 78 : t.signalStrength === "moderate" ? 55 : 35;
+          const conf = t.signalStrength === "strong" ? 82 : t.signalStrength === "moderate" ? 58 : 34;
           const barColor = t.signal === "BUY" ? "bg-chart-2" : t.signal === "SELL" ? "bg-destructive" : "bg-chart-4";
+          const ema9AboveEma100 = t.ema9 > t.ema100;
 
           return (
-            <div key={t.symbol} className="flex items-center gap-3">
-              <div className="w-16 flex-shrink-0">
-                <div className="text-[10px] font-bold text-foreground font-mono">{t.symbol}</div>
-                <div className={`text-[9px] ${isUp ? "text-profit" : "text-loss"}`}>{t.price.toFixed(dp)}</div>
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-[9px] text-muted-foreground">{strengthLabel} signal</span>
-                  <span className="text-[9px] font-bold text-muted-foreground">{conf}%</span>
+            <div key={t.symbol} className="p-3 bg-secondary/40 rounded-xl border border-border">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-14 flex-shrink-0">
+                  <div className="text-[11px] font-bold text-foreground font-mono">{t.symbol}</div>
+                  <div className={`text-[9px] ${isUp ? "text-profit" : "text-loss"}`}>{t.price.toFixed(dp)}</div>
                 </div>
-                <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                  <div className={`h-full rounded-full transition-all duration-700 ${barColor}`} style={{ width: `${conf}%` }} />
+                <div className="flex-1">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-[9px] text-muted-foreground">Confidence</span>
+                    <span className="text-[9px] font-bold text-muted-foreground">{conf}%</span>
+                  </div>
+                  <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                    <div className={`h-full rounded-full transition-all duration-700 ${barColor}`} style={{ width: `${conf}%` }} />
+                  </div>
                 </div>
+                <SignalBadge signal={t.signal} strength={t.signalStrength} />
               </div>
-              <SignalBadge signal={t.signal} strength={t.signalStrength} />
+              <div className="grid grid-cols-3 gap-2 text-[9px] text-muted-foreground">
+                <span>RSI4: <span className={t.rsi < 30 ? "text-chart-2 font-bold" : t.rsi > 70 ? "text-destructive font-bold" : "text-foreground"}>{t.rsi.toFixed(1)}</span></span>
+                <span>EMA9: <span className={ema9AboveEma100 ? "text-chart-2" : "text-destructive"}>{t.ema9 > t.ema100 ? "▲ Above" : "▼ Below"} EMA100</span></span>
+                <span>Bias: <span className={t.signal === "BUY" ? "text-chart-2" : t.signal === "SELL" ? "text-destructive" : "text-chart-4"}>{t.signal}</span></span>
+              </div>
             </div>
           );
         })}
@@ -118,7 +141,7 @@ function SignalsPanel({ tickers }: { tickers: Ticker[] }) {
 }
 
 export default function Dashboard() {
-  const { data: tickers = [] } = useGetMarketTickers({ query: { refetchInterval: 1000, queryKey: getGetMarketTickersQueryKey() } });
+  const { data: tickers = [] } = useGetMarketTickers({ query: { refetchInterval: 900, queryKey: getGetMarketTickersQueryKey() } });
   const { data: summary } = useGetMarketSummary({ query: { refetchInterval: 3000, queryKey: getGetMarketSummaryQueryKey() } });
   const { data: botStatus } = useGetBotStatus({ query: { refetchInterval: 3000, queryKey: getGetBotStatusQueryKey() } });
   const { data: balance } = useGetBalance({ query: { refetchInterval: 5000, queryKey: getGetBalanceQueryKey() } });
@@ -128,9 +151,9 @@ export default function Dashboard() {
 
   return (
     <Layout>
-      {/* Scrolling ticker banner */}
+      {/* Live ticker banner */}
       <div className="border-b border-border bg-card/50 overflow-x-auto px-4 py-2">
-        <div className="flex items-center gap-5 min-w-max">
+        <div className="flex items-center gap-4 min-w-max">
           <div className="flex items-center gap-1.5 flex-shrink-0">
             <span className="w-1.5 h-1.5 bg-chart-2 rounded-full pulse-dot" />
             <span className="text-[9px] font-black text-chart-2 uppercase tracking-widest">Live</span>
@@ -139,11 +162,14 @@ export default function Dashboard() {
             const dp = t.symbol === "BTCUSD" || t.symbol === "XAUUSD" ? 2 : 5;
             const isUp = t.direction === "up";
             return (
-              <div key={t.symbol} className="flex items-center gap-1.5 flex-shrink-0">
-                <span className="text-[11px] font-bold text-muted-foreground">{t.symbol}</span>
-                <span className="text-[13px] font-bold font-mono text-foreground">{t.price.toFixed(dp)}</span>
-                <span className={`text-[11px] font-bold ${isUp ? "text-profit" : "text-loss"}`}>{isUp ? "▲" : "▼"}{Math.abs(t.changePercent).toFixed(3)}%</span>
+              <div key={t.symbol} className="flex items-center gap-2 flex-shrink-0">
+                <span className="text-[10px] font-bold text-muted-foreground">{t.symbol}</span>
+                <span className="text-[12px] font-bold font-mono text-foreground">{t.price.toFixed(dp)}</span>
+                <span className={`text-[10px] font-bold ${isUp ? "text-profit" : "text-loss"}`}>{isUp ? "▲" : "▼"}{Math.abs(t.changePercent).toFixed(3)}%</span>
                 <SignalBadge signal={t.signal} strength={t.signalStrength} />
+                <span className={`text-[9px] font-mono ${t.rsi < 30 ? "text-chart-2" : t.rsi > 70 ? "text-destructive" : "text-muted-foreground"}`}>
+                  RSI {t.rsi.toFixed(0)}
+                </span>
               </div>
             );
           })}
@@ -151,11 +177,10 @@ export default function Dashboard() {
       </div>
 
       <div className="p-4 sm:p-5 space-y-4">
-        {/* Page title */}
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-base font-bold text-foreground">Overview</h1>
-            <p className="text-[11px] text-muted-foreground mt-0.5">Simulation dashboard</p>
+            <p className="text-[11px] text-muted-foreground">EMA9 · EMA100 · RSI4 strategy engine</p>
           </div>
           <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
             <span className="w-1.5 h-1.5 rounded-full bg-chart-2 pulse-dot" />
@@ -163,39 +188,41 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Stats — 2×2 on mobile, 4×1 on lg */}
+        {/* Stats */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          <StatCard
-            label="USDT Balance"
-            value={`$${(balance?.usdt ?? 0).toFixed(2)}`}
-            sub="Available funds"
-            color="primary"
-          />
-          <StatCard
-            label="Total P&L"
-            value={`${pnlUp ? "+" : ""}$${(stats?.totalPnl ?? 0).toFixed(2)}`}
-            sub={`${stats?.totalTrades ?? 0} trades`}
-            color={pnlUp ? "green" : "red"}
-          />
-          <StatCard
-            label="Win Rate"
-            value={`${stats?.winRate ?? 0}%`}
-            sub={`${stats?.winningTrades ?? 0}W · ${stats?.losingTrades ?? 0}L`}
-            color={(stats?.winRate ?? 0) >= 50 ? "green" : "red"}
-          />
-          <StatCard
-            label="Bot Status"
-            value={botStatus?.isRunning ? "ACTIVE" : "IDLE"}
-            sub={botStatus?.isRunning ? `${botStatus.strategy}` : "Not running"}
-            color={botStatus?.isRunning ? "green" : "default"}
-          />
+          <div className="bg-card border border-primary/20 rounded-xl p-4">
+            <div className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest mb-2">USDT Balance</div>
+            <div className="text-2xl font-bold font-mono text-primary ticker-glow">${(balance?.usdt ?? 0).toFixed(2)}</div>
+            <div className="text-[11px] text-muted-foreground mt-1">Available funds</div>
+          </div>
+          <div className={`bg-card border rounded-xl p-4 ${pnlUp ? "border-chart-2/20" : "border-destructive/20"}`}>
+            <div className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest mb-2">Total P&L</div>
+            <div className={`text-2xl font-bold font-mono ${pnlUp ? "text-profit" : "text-loss"}`}>
+              {pnlUp ? "+" : ""}${(stats?.totalPnl ?? 0).toFixed(2)}
+            </div>
+            <div className="text-[11px] text-muted-foreground mt-1">{stats?.totalTrades ?? 0} trades</div>
+          </div>
+          <div className="bg-card border border-card-border rounded-xl p-4">
+            <div className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest mb-2">Win Rate</div>
+            <div className={`text-2xl font-bold font-mono ${(stats?.winRate ?? 0) >= 50 ? "text-profit" : "text-loss"}`}>{stats?.winRate ?? 0}%</div>
+            <div className="text-[11px] text-muted-foreground mt-1">{stats?.winningTrades ?? 0}W · {stats?.losingTrades ?? 0}L</div>
+          </div>
+          <div className={`bg-card border rounded-xl p-4 ${botStatus?.isRunning ? "border-chart-2/20" : "border-card-border"}`}>
+            <div className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest mb-2">Bot Status</div>
+            <div className={`text-2xl font-bold ${botStatus?.isRunning ? "text-chart-2" : "text-muted-foreground"}`}>
+              {botStatus?.isRunning ? "ACTIVE" : "IDLE"}
+            </div>
+            <div className="text-[11px] text-muted-foreground mt-1">
+              {botStatus?.isRunning ? `${botStatus.timeframe} · ${botStatus.strategy}` : "Not running"}
+            </div>
+          </div>
         </div>
 
-        {/* Market cards — 1 col mobile, 2 col sm, 4 col xl */}
+        {/* Market cards */}
         <div>
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Market Watch</h2>
-            <span className="text-[9px] text-muted-foreground">~800ms updates</span>
+            <span className="text-[9px] text-muted-foreground">~900ms updates</span>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
             {tickers.map((t) => <MarketCard key={t.symbol} t={t} />)}
@@ -207,56 +234,52 @@ export default function Dashboard() {
 
         {/* Bot + Sentiment */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          {/* Bot */}
           <div className="lg:col-span-2 bg-card border border-card-border rounded-xl p-4">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Trading Bot</h2>
-              <div className={`flex items-center gap-1.5 text-[9px] font-black px-2.5 py-1 rounded-full border uppercase tracking-wider ${
-                botStatus?.isRunning
-                  ? "bg-chart-2/15 text-chart-2 border-chart-2/25"
-                  : "bg-muted/50 text-muted-foreground border-border"
-              }`}>
+              <div className={`flex items-center gap-1.5 text-[9px] font-black px-2.5 py-1 rounded-full border uppercase tracking-wider ${botStatus?.isRunning ? "bg-chart-2/15 text-chart-2 border-chart-2/25" : "bg-muted/50 text-muted-foreground border-border"}`}>
                 <span className={`w-1.5 h-1.5 rounded-full ${botStatus?.isRunning ? "bg-chart-2 pulse-dot" : "bg-muted-foreground"}`} />
                 {botStatus?.status ?? "idle"}
               </div>
             </div>
-
             {botStatus?.isRunning ? (
-              <div className="grid grid-cols-3 gap-3 text-center py-2">
+              <div className="grid grid-cols-4 gap-3 text-center py-2">
                 <div>
-                  <div className="text-2xl font-bold font-mono text-primary">{botStatus.tradesExecuted}</div>
-                  <div className="text-[9px] text-muted-foreground uppercase tracking-wider mt-1">Trades Run</div>
+                  <div className="text-xl font-bold font-mono text-primary">{botStatus.tradesExecuted}</div>
+                  <div className="text-[9px] text-muted-foreground uppercase mt-0.5">Trades</div>
                 </div>
                 <div>
-                  <div className={`text-2xl font-bold font-mono ${(botStatus.profitLoss ?? 0) >= 0 ? "text-profit" : "text-loss"}`}>
+                  <div className={`text-xl font-bold font-mono ${(botStatus.profitLoss ?? 0) >= 0 ? "text-profit" : "text-loss"}`}>
                     {(botStatus.profitLoss ?? 0) >= 0 ? "+" : ""}${(botStatus.profitLoss ?? 0).toFixed(2)}
                   </div>
-                  <div className="text-[9px] text-muted-foreground uppercase tracking-wider mt-1">Session P&L</div>
+                  <div className="text-[9px] text-muted-foreground uppercase mt-0.5">P&L</div>
                 </div>
                 <div>
-                  <div className="text-base font-semibold text-foreground">{botStatus.strategy}</div>
-                  <div className="text-[9px] text-muted-foreground uppercase tracking-wider mt-1">Strategy</div>
+                  <div className="text-xl font-bold font-mono text-chart-4">{botStatus.winStreak ?? 0}</div>
+                  <div className="text-[9px] text-muted-foreground uppercase mt-0.5">Streak</div>
+                </div>
+                <div>
+                  <div className="text-base font-bold text-foreground">{botStatus.timeframe}</div>
+                  <div className="text-[9px] text-muted-foreground uppercase mt-0.5">Timeframe</div>
                 </div>
               </div>
             ) : (
-              <div className="py-6 text-center">
+              <div className="py-5 text-center">
                 <div className="text-2xl mb-2 opacity-30">⚡</div>
                 <p className="text-sm text-muted-foreground">Bot is not running</p>
-                <p className="text-[11px] text-muted-foreground mt-1">Configure and start from the Trading Bot page</p>
+                <p className="text-[11px] text-muted-foreground mt-1">Start from the Trading Bot page</p>
               </div>
             )}
-
             <div className="mt-4 grid grid-cols-2 gap-2">
-              <Link href="/bot" className="flex items-center justify-center py-3 bg-secondary hover:bg-primary/10 border border-border hover:border-primary/30 text-[12px] font-semibold text-foreground rounded-xl transition-all active:scale-[0.97]">
+              <Link href="/bot" className="flex items-center justify-center py-3 bg-secondary hover:bg-primary/10 border border-border hover:border-primary/30 text-xs font-semibold text-foreground rounded-xl transition-all active:scale-[0.97]">
                 ⚡ Manage Bot
               </Link>
-              <Link href="/trades" className="flex items-center justify-center py-3 bg-secondary hover:bg-primary/10 border border-border hover:border-primary/30 text-[12px] font-semibold text-foreground rounded-xl transition-all active:scale-[0.97]">
+              <Link href="/trades" className="flex items-center justify-center py-3 bg-secondary hover:bg-primary/10 border border-border hover:border-primary/30 text-xs font-semibold text-foreground rounded-xl transition-all active:scale-[0.97]">
                 ▤ Trade History
               </Link>
             </div>
           </div>
 
-          {/* Sentiment */}
           <div className="bg-card border border-card-border rounded-xl p-4">
             <h2 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-4">Market Sentiment</h2>
             <div className="space-y-3">
@@ -278,7 +301,7 @@ export default function Dashboard() {
                   <div className="h-full bg-destructive rounded-full transition-all duration-700" style={{ width: `${((summary?.bearishCount ?? 0) / 4) * 100}%` }} />
                 </div>
               </div>
-              <div className="pt-2 border-t border-border space-y-2 text-[11px]">
+              <div className="pt-2.5 border-t border-border space-y-1.5 text-[11px]">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">24h Volume</span>
                   <span className="font-mono text-foreground">{((summary?.totalVolume ?? 0) / 1e6).toFixed(2)}M</span>
@@ -290,6 +313,12 @@ export default function Dashboard() {
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Worst trade</span>
                   <span className="font-mono text-loss">${(stats?.worstTrade ?? 0).toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Avg profit</span>
+                  <span className={`font-mono ${(stats?.avgProfit ?? 0) >= 0 ? "text-profit" : "text-loss"}`}>
+                    {(stats?.avgProfit ?? 0) >= 0 ? "+" : ""}${(stats?.avgProfit ?? 0).toFixed(2)}
+                  </span>
                 </div>
               </div>
             </div>

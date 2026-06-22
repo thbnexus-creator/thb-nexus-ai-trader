@@ -3,12 +3,25 @@ import { useGetBotStatus, useStartBot, useStopBot, getGetBotStatusQueryKey } fro
 import { useQueryClient } from "@tanstack/react-query";
 import { Layout } from "@/components/layout";
 
-const STRATEGIES = ["Scalping", "Swing", "Grid", "Trend Following"];
-const RISK_LEVELS = [
-  { label: "Low",    color: "text-chart-2",   bg: "bg-chart-2/15",    border: "border-chart-2/35" },
-  { label: "Medium", color: "text-chart-4",   bg: "bg-chart-4/15",    border: "border-chart-4/35" },
-  { label: "High",   color: "text-destructive", bg: "bg-destructive/15", border: "border-destructive/35" },
+const STRATEGIES = [
+  { id: "Scalping",        desc: "Fast micro-trades, high frequency" },
+  { id: "Swing",           desc: "Medium-term momentum trades" },
+  { id: "Grid",            desc: "Range-bound grid orders" },
+  { id: "Trend Following", desc: "Follow macro EMA trend" },
 ];
+
+const TIMEFRAMES = [
+  { id: "1min", label: "1 Min",  desc: "Ultra-fast · ~20s intervals" },
+  { id: "3min", label: "3 Min",  desc: "Fast · ~40s intervals" },
+  { id: "5min", label: "5 Min",  desc: "Standard · ~60s intervals" },
+];
+
+const RISK_LEVELS = [
+  { label: "Low",    desc: "1% risk / trade",  cls: "text-chart-2 bg-chart-2/15 border-chart-2/35" },
+  { label: "Medium", desc: "2% risk / trade",  cls: "text-chart-4 bg-chart-4/15 border-chart-4/35" },
+  { label: "High",   desc: "3% risk / trade",  cls: "text-destructive bg-destructive/15 border-destructive/35" },
+];
+
 const SYMBOLS = ["EURUSD", "GBPUSD", "XAUUSD", "BTCUSD"];
 
 export default function BotPage() {
@@ -18,6 +31,7 @@ export default function BotPage() {
   const stopBot = useStopBot();
 
   const [strategy, setStrategy] = useState("Scalping");
+  const [timeframe, setTimeframe] = useState("5min");
   const [riskLevel, setRiskLevel] = useState("Medium");
   const [selectedSymbols, setSelectedSymbols] = useState<string[]>(["EURUSD", "GBPUSD"]);
   const [toast, setToast] = useState<{ msg: string; type: "ok" | "err" } | null>(null);
@@ -34,13 +48,13 @@ export default function BotPage() {
   function handleStart() {
     if (!selectedSymbols.length) { showToast("Select at least one symbol", "err"); return; }
     startBot.mutate(
-      { data: { strategy, riskLevel, symbols: selectedSymbols } },
+      { data: { strategy, riskLevel, symbols: selectedSymbols, timeframe } },
       {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: getGetBotStatusQueryKey() });
-          showToast(`Bot started — ${strategy} · ${riskLevel} risk`);
+          showToast(`Bot started — ${strategy} · ${timeframe} · ${riskLevel} risk`);
         },
-        onError: (err: any) => showToast(err?.response?.data?.error ?? "Failed to start bot", "err"),
+        onError: (err: any) => showToast(err?.response?.data?.error ?? "Failed to start", "err"),
       }
     );
   }
@@ -59,69 +73,59 @@ export default function BotPage() {
   return (
     <Layout>
       <div className="p-4 sm:p-5 space-y-4 max-w-2xl mx-auto">
-        {/* Header */}
         <div>
           <h1 className="text-base font-bold text-foreground">Trading Bot</h1>
-          <p className="text-[11px] text-muted-foreground mt-0.5">Configure and control your AI trading bot (simulation)</p>
+          <p className="text-[11px] text-muted-foreground mt-0.5">Strategy engine — EMA9 / EMA100 / RSI4 analysis (simulation)</p>
         </div>
 
         {/* Toast */}
         {toast && (
-          <div className={`px-4 py-3 rounded-xl border text-sm font-medium flex items-center gap-2 ${
-            toast.type === "ok"
-              ? "bg-chart-2/10 border-chart-2/25 text-chart-2"
-              : "bg-destructive/10 border-destructive/25 text-destructive"
-          }`}>
+          <div className={`px-4 py-3 rounded-xl border text-sm font-medium flex items-center gap-2 ${toast.type === "ok" ? "bg-chart-2/10 border-chart-2/25 text-chart-2" : "bg-destructive/10 border-destructive/25 text-destructive"}`}>
             <span>{toast.type === "ok" ? "✓" : "✗"}</span>
             {toast.msg}
           </div>
         )}
 
         {/* Status card */}
-        <div className={`rounded-xl border p-4 transition-all ${
-          isRunning ? "bg-chart-2/8 border-chart-2/30" : "bg-card border-card-border"
-        }`}>
+        <div className={`rounded-xl border p-4 transition-all ${isRunning ? "bg-chart-2/8 border-chart-2/30" : "bg-card border-card-border"}`}>
           <div className="flex items-center gap-3">
-            <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
-              isRunning ? "bg-chart-2/20 border border-chart-2/30" : "bg-muted border border-border"
-            }`}>
-              <span className={`text-xl ${isRunning ? "pulse-dot" : "opacity-30"}`}>⚡</span>
+            <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 text-2xl ${isRunning ? "bg-chart-2/20 border border-chart-2/30" : "bg-muted border border-border"}`}>
+              {isRunning ? <span className="pulse-dot">⚡</span> : <span className="opacity-30">⚡</span>}
             </div>
             <div className="flex-1 min-w-0">
               <div className={`text-sm font-bold ${isRunning ? "text-chart-2" : "text-muted-foreground"}`}>
-                {isRunning ? "Bot Active — Simulation Running" : "Bot Inactive"}
+                {isRunning ? "Bot Active — Strategy Running" : "Bot Inactive"}
               </div>
               {isRunning && (
                 <div className="text-[11px] text-muted-foreground mt-0.5 truncate">
-                  {botStatus?.strategy} · {botStatus?.riskLevel} risk · {botStatus?.symbols?.join(", ")}
+                  {botStatus?.strategy} · {botStatus?.timeframe} · {botStatus?.riskLevel} risk · {botStatus?.symbols?.join(", ")}
                 </div>
               )}
             </div>
-            <div className={`flex-shrink-0 text-[9px] font-black px-2.5 py-1.5 rounded-full border uppercase tracking-wider ${
-              isRunning
-                ? "bg-chart-2/15 text-chart-2 border-chart-2/30"
-                : "bg-muted/50 text-muted-foreground border-border"
-            }`}>
+            <div className={`flex-shrink-0 text-[9px] font-black px-2.5 py-1.5 rounded-full border uppercase tracking-wider ${isRunning ? "bg-chart-2/15 text-chart-2 border-chart-2/30" : "bg-muted/50 text-muted-foreground border-border"}`}>
               {botStatus?.status ?? "idle"}
             </div>
           </div>
 
-          {/* Live stats when running */}
           {isRunning && (
-            <div className="grid grid-cols-3 gap-3 mt-4 pt-4 border-t border-chart-2/20">
+            <div className="grid grid-cols-4 gap-3 mt-4 pt-4 border-t border-chart-2/20">
               <div className="text-center">
-                <div className="text-2xl font-bold font-mono text-primary">{botStatus?.tradesExecuted ?? 0}</div>
-                <div className="text-[9px] text-muted-foreground uppercase tracking-wider mt-0.5">Trades</div>
+                <div className="text-xl font-bold font-mono text-primary">{botStatus?.tradesExecuted ?? 0}</div>
+                <div className="text-[8px] text-muted-foreground uppercase tracking-wider mt-0.5">Trades</div>
               </div>
               <div className="text-center">
-                <div className={`text-2xl font-bold font-mono ${(botStatus?.profitLoss ?? 0) >= 0 ? "text-profit" : "text-loss"}`}>
+                <div className={`text-xl font-bold font-mono ${(botStatus?.profitLoss ?? 0) >= 0 ? "text-profit" : "text-loss"}`}>
                   {(botStatus?.profitLoss ?? 0) >= 0 ? "+" : ""}${(botStatus?.profitLoss ?? 0).toFixed(2)}
                 </div>
-                <div className="text-[9px] text-muted-foreground uppercase tracking-wider mt-0.5">P&L</div>
+                <div className="text-[8px] text-muted-foreground uppercase tracking-wider mt-0.5">P&L</div>
               </div>
               <div className="text-center">
-                <div className="text-sm font-bold text-foreground">{botStatus?.riskLevel}</div>
-                <div className="text-[9px] text-muted-foreground uppercase tracking-wider mt-0.5">Risk</div>
+                <div className="text-xl font-bold font-mono text-chart-4">{botStatus?.winStreak ?? 0}</div>
+                <div className="text-[8px] text-muted-foreground uppercase tracking-wider mt-0.5">Win Streak</div>
+              </div>
+              <div className="text-center">
+                <div className="text-base font-bold text-foreground font-mono">{botStatus?.currentLot?.toFixed(2) ?? "0.01"}</div>
+                <div className="text-[8px] text-muted-foreground uppercase tracking-wider mt-0.5">Lots</div>
               </div>
             </div>
           )}
@@ -131,28 +135,51 @@ export default function BotPage() {
         <div className="bg-card border border-card-border rounded-xl p-4 space-y-5">
           <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Bot Configuration</div>
 
+          {/* Timeframe — NEW */}
+          <div>
+            <div className="text-xs font-semibold text-muted-foreground mb-2.5 uppercase tracking-wider">Timeframe</div>
+            <div className="grid grid-cols-3 gap-2">
+              {TIMEFRAMES.map((tf) => (
+                <button
+                  key={tf.id}
+                  onClick={() => setTimeframe(tf.id)}
+                  disabled={isRunning}
+                  className={`py-3 px-2 rounded-xl border transition-all active:scale-[0.97] disabled:opacity-40 disabled:cursor-not-allowed text-center ${
+                    timeframe === tf.id
+                      ? "bg-primary/15 border-primary/40 text-primary"
+                      : "bg-secondary border-border text-muted-foreground hover:text-foreground hover:border-primary/20"
+                  }`}
+                >
+                  <div className="text-sm font-bold">{tf.label}</div>
+                  <div className="text-[9px] mt-0.5 opacity-70">{tf.desc}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Strategy */}
           <div>
             <div className="text-xs font-semibold text-muted-foreground mb-2.5 uppercase tracking-wider">Strategy</div>
             <div className="grid grid-cols-2 gap-2">
               {STRATEGIES.map((s) => (
                 <button
-                  key={s}
-                  onClick={() => setStrategy(s)}
+                  key={s.id}
+                  onClick={() => setStrategy(s.id)}
                   disabled={isRunning}
-                  className={`py-3 px-3 rounded-xl text-sm font-semibold border transition-all active:scale-[0.97] disabled:opacity-40 disabled:cursor-not-allowed ${
-                    strategy === s
+                  className={`py-3 px-3 rounded-xl text-left border transition-all active:scale-[0.97] disabled:opacity-40 disabled:cursor-not-allowed ${
+                    strategy === s.id
                       ? "bg-primary/15 border-primary/40 text-primary"
                       : "bg-secondary border-border text-muted-foreground hover:text-foreground hover:border-primary/20"
                   }`}
                 >
-                  {s}
+                  <div className="text-sm font-bold">{s.id}</div>
+                  <div className="text-[9px] mt-0.5 opacity-70">{s.desc}</div>
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Risk level */}
+          {/* Risk */}
           <div>
             <div className="text-xs font-semibold text-muted-foreground mb-2.5 uppercase tracking-wider">Risk Level</div>
             <div className="grid grid-cols-3 gap-2">
@@ -161,13 +188,14 @@ export default function BotPage() {
                   key={r.label}
                   onClick={() => setRiskLevel(r.label)}
                   disabled={isRunning}
-                  className={`py-3 rounded-xl text-sm font-bold border transition-all active:scale-[0.97] disabled:opacity-40 disabled:cursor-not-allowed ${
+                  className={`py-3 px-2 rounded-xl border transition-all active:scale-[0.97] disabled:opacity-40 disabled:cursor-not-allowed text-center ${
                     riskLevel === r.label
-                      ? `${r.bg} ${r.border} ${r.color}`
+                      ? `${r.cls} font-bold`
                       : "bg-secondary border-border text-muted-foreground hover:text-foreground"
                   }`}
                 >
-                  {r.label}
+                  <div className="text-sm font-bold">{r.label}</div>
+                  <div className="text-[9px] mt-0.5 opacity-70">{r.desc}</div>
                 </button>
               ))}
             </div>
@@ -195,16 +223,50 @@ export default function BotPage() {
           </div>
         </div>
 
-        {/* Action buttons */}
+        {/* Strategy engine info */}
+        <div className="bg-card border border-card-border rounded-xl p-4">
+          <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-3">Strategy Engine — Signal Logic</div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-[11px]">
+            <div className="p-3 bg-chart-2/8 border border-chart-2/20 rounded-xl">
+              <div className="font-bold text-chart-2 mb-1.5">BUY Conditions</div>
+              <ul className="space-y-1 text-muted-foreground">
+                <li>• Price above EMA 100</li>
+                <li>• EMA 9 trending upward</li>
+                <li>• RSI 4 below 40 with hook up</li>
+                <li>• TP: +3–6 pips</li>
+              </ul>
+            </div>
+            <div className="p-3 bg-destructive/8 border border-destructive/20 rounded-xl">
+              <div className="font-bold text-destructive mb-1.5">SELL Conditions</div>
+              <ul className="space-y-1 text-muted-foreground">
+                <li>• Price below EMA 100</li>
+                <li>• EMA 9 trending downward</li>
+                <li>• RSI 4 above 60 with hook down</li>
+                <li>• SL: −3–6 pips</li>
+              </ul>
+            </div>
+          </div>
+          <div className="mt-3 grid grid-cols-3 gap-2 text-[10px] text-muted-foreground">
+            <div className="p-2 bg-secondary border border-border rounded-lg text-center">
+              <div className="font-bold text-foreground mb-0.5">Timeout</div>180s max
+            </div>
+            <div className="p-2 bg-secondary border border-border rounded-lg text-center">
+              <div className="font-bold text-foreground mb-0.5">Lot Sizing</div>Dynamic %
+            </div>
+            <div className="p-2 bg-secondary border border-border rounded-lg text-center">
+              <div className="font-bold text-foreground mb-0.5">Win Boost</div>+10% / win
+            </div>
+          </div>
+        </div>
+
+        {/* Start/Stop */}
         <div className="grid grid-cols-2 gap-3">
           <button
             onClick={handleStart}
             disabled={startBot.isPending || isRunning}
             className="py-4 rounded-xl text-sm font-bold bg-chart-2 text-white hover:bg-chart-2/90 disabled:opacity-40 disabled:cursor-not-allowed transition-all active:scale-[0.97] glow-green flex items-center justify-center gap-2"
           >
-            {startBot.isPending ? (
-              <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-            ) : "⚡"}
+            {startBot.isPending ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : "⚡"}
             {startBot.isPending ? "Starting..." : "Start Bot"}
           </button>
           <button
@@ -212,16 +274,13 @@ export default function BotPage() {
             disabled={stopBot.isPending || !isRunning}
             className="py-4 rounded-xl text-sm font-bold bg-destructive text-white hover:bg-destructive/90 disabled:opacity-40 disabled:cursor-not-allowed transition-all active:scale-[0.97] flex items-center justify-center gap-2"
           >
-            {stopBot.isPending ? (
-              <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-            ) : "⏹"}
+            {stopBot.isPending ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : "⏹"}
             {stopBot.isPending ? "Stopping..." : "Stop Bot"}
           </button>
         </div>
 
-        {/* Disclaimer */}
         <div className="bg-muted/20 border border-border rounded-xl px-4 py-3 text-[11px] text-muted-foreground">
-          All trading activity is <strong className="text-foreground">simulation only</strong>. No real funds are used or at risk. Architecture is prepared for future VPS Python MT5 integration and real broker connectivity.
+          <strong className="text-foreground">Simulation only.</strong> All trades and signals are analysis-based demos. No real funds at risk. System is architected for future VPS Python MT5 real broker integration.
         </div>
       </div>
     </Layout>

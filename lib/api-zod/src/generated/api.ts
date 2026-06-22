@@ -114,8 +114,9 @@ export const GetMarketTickersResponseItem = zod.object({
   "direction": zod.string(),
   "signal": zod.string(),
   "signalStrength": zod.string(),
-  "ema5": zod.number(),
-  "ema15": zod.number()
+  "ema9": zod.number(),
+  "ema100": zod.number(),
+  "rsi": zod.number()
 })
 export const GetMarketTickersResponse = zod.array(GetMarketTickersResponseItem)
 
@@ -138,11 +139,14 @@ export const GetBotStatusResponse = zod.object({
   "isRunning": zod.boolean(),
   "strategy": zod.string().nullable(),
   "riskLevel": zod.string().nullable(),
+  "timeframe": zod.string().nullable(),
   "symbols": zod.array(zod.string()),
   "tradesExecuted": zod.number(),
   "startedAt": zod.string().nullable(),
   "profitLoss": zod.number(),
-  "status": zod.string()
+  "status": zod.string(),
+  "currentLot": zod.number(),
+  "winStreak": zod.number()
 })
 
 
@@ -152,18 +156,22 @@ export const GetBotStatusResponse = zod.object({
 export const StartBotBody = zod.object({
   "strategy": zod.string(),
   "riskLevel": zod.string(),
-  "symbols": zod.array(zod.string()).optional()
+  "symbols": zod.array(zod.string()).optional(),
+  "timeframe": zod.string().optional()
 })
 
 export const StartBotResponse = zod.object({
   "isRunning": zod.boolean(),
   "strategy": zod.string().nullable(),
   "riskLevel": zod.string().nullable(),
+  "timeframe": zod.string().nullable(),
   "symbols": zod.array(zod.string()),
   "tradesExecuted": zod.number(),
   "startedAt": zod.string().nullable(),
   "profitLoss": zod.number(),
-  "status": zod.string()
+  "status": zod.string(),
+  "currentLot": zod.number(),
+  "winStreak": zod.number()
 })
 
 
@@ -174,11 +182,14 @@ export const StopBotResponse = zod.object({
   "isRunning": zod.boolean(),
   "strategy": zod.string().nullable(),
   "riskLevel": zod.string().nullable(),
+  "timeframe": zod.string().nullable(),
   "symbols": zod.array(zod.string()),
   "tradesExecuted": zod.number(),
   "startedAt": zod.string().nullable(),
   "profitLoss": zod.number(),
-  "status": zod.string()
+  "status": zod.string(),
+  "currentLot": zod.number(),
+  "winStreak": zod.number()
 })
 
 
@@ -300,5 +311,138 @@ export const GetTradeStatsResponse = zod.object({
   "worstTrade": zod.number(),
   "avgProfit": zod.number()
 })
+
+
+/**
+ * @summary Admin platform overview stats
+ */
+export const GetAdminOverviewResponse = zod.object({
+  "totalUsers": zod.number(),
+  "verifiedUsers": zod.number(),
+  "activeUsers": zod.number(),
+  "totalDeposited": zod.number(),
+  "totalTrades": zod.number(),
+  "totalPnl": zod.number(),
+  "activeBots": zod.number(),
+  "mt5Connected": zod.number(),
+  "activationKeys": zod.number()
+})
+
+
+/**
+ * @summary List all users with stats
+ */
+export const GetAdminUsersResponseItem = zod.object({
+  "id": zod.string(),
+  "email": zod.string(),
+  "name": zod.string(),
+  "isAdmin": zod.boolean(),
+  "isVerified": zod.boolean(),
+  "isActive": zod.boolean(),
+  "createdAt": zod.string(),
+  "balance": zod.number(),
+  "totalDeposited": zod.number(),
+  "totalPnl": zod.number(),
+  "totalTrades": zod.number(),
+  "winRate": zod.number(),
+  "botRunning": zod.boolean(),
+  "mt5Connected": zod.boolean()
+})
+export const GetAdminUsersResponse = zod.array(GetAdminUsersResponseItem)
+
+
+/**
+ * @summary Toggle user active status
+ */
+export const AdminToggleUserParams = zod.object({
+  "userId": zod.coerce.string()
+})
+
+export const AdminToggleUserResponse = zod.object({
+  "id": zod.string(),
+  "email": zod.string(),
+  "name": zod.string(),
+  "isAdmin": zod.boolean(),
+  "isVerified": zod.boolean(),
+  "isActive": zod.boolean(),
+  "createdAt": zod.string(),
+  "balance": zod.number(),
+  "totalDeposited": zod.number(),
+  "totalPnl": zod.number(),
+  "totalTrades": zod.number(),
+  "winRate": zod.number(),
+  "botRunning": zod.boolean(),
+  "mt5Connected": zod.boolean()
+})
+
+
+/**
+ * @summary List activation keys
+ */
+export const GetActivationKeysResponseItem = zod.object({
+  "id": zod.string(),
+  "key": zod.string(),
+  "plan": zod.string(),
+  "usedBy": zod.string().nullable(),
+  "usedAt": zod.string().nullable(),
+  "expiresAt": zod.string().nullable(),
+  "createdAt": zod.string(),
+  "isActive": zod.boolean()
+})
+export const GetActivationKeysResponse = zod.array(GetActivationKeysResponseItem)
+
+
+/**
+ * @summary Generate a new activation key
+ */
+export const GenerateActivationKeyBody = zod.object({
+  "plan": zod.string(),
+  "expiryDays": zod.number()
+})
+
+export const GenerateActivationKeyResponse = zod.object({
+  "id": zod.string(),
+  "key": zod.string(),
+  "plan": zod.string(),
+  "usedBy": zod.string().nullable(),
+  "usedAt": zod.string().nullable(),
+  "expiresAt": zod.string().nullable(),
+  "createdAt": zod.string(),
+  "isActive": zod.boolean()
+})
+
+
+/**
+ * @summary All trades across all users
+ */
+export const GetAdminAllTradesResponseItem = zod.object({
+  "id": zod.string(),
+  "userId": zod.string(),
+  "symbol": zod.string(),
+  "direction": zod.string(),
+  "entryPrice": zod.number(),
+  "exitPrice": zod.number().nullable(),
+  "lots": zod.number(),
+  "profitLoss": zod.number().nullable(),
+  "status": zod.string(),
+  "openedAt": zod.string(),
+  "closedAt": zod.string().nullable()
+})
+export const GetAdminAllTradesResponse = zod.array(GetAdminAllTradesResponseItem)
+
+
+/**
+ * @summary All deposits across all users
+ */
+export const GetAdminAllDepositsResponseItem = zod.object({
+  "id": zod.string(),
+  "userId": zod.string(),
+  "amount": zod.number(),
+  "currency": zod.string(),
+  "status": zod.string(),
+  "txHash": zod.string().nullable(),
+  "createdAt": zod.string()
+})
+export const GetAdminAllDepositsResponse = zod.array(GetAdminAllDepositsResponseItem)
 
 
