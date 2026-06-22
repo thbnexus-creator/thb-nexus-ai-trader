@@ -16,8 +16,9 @@ export default function Register() {
     register.mutate(
       { data: { name, email, password } },
       {
-        onSuccess: (data) => {
-          navigate(`/verify-otp?email=${encodeURIComponent(data.email)}`);
+        onSuccess: (data: any) => {
+          const otpPreview = data.otpPreview ?? "";
+          navigate(`/verify-otp?email=${encodeURIComponent(data.email)}&otp=${encodeURIComponent(otpPreview)}`);
         },
         onError: (err: any) => {
           setError(err?.response?.data?.error ?? "Registration failed");
@@ -34,7 +35,7 @@ export default function Register() {
             <span className="text-primary text-xl font-bold">Nx</span>
           </div>
           <h1 className="text-xl font-bold text-foreground">Create Account</h1>
-          <p className="text-sm text-muted-foreground mt-1">Join the THB Nexus trading platform</p>
+          <p className="text-sm text-muted-foreground mt-1">Join the THB Nexus AI trading platform</p>
         </div>
 
         <div className="bg-card border border-card-border rounded-xl p-6">
@@ -48,7 +49,8 @@ export default function Register() {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
-                className="w-full px-3 py-2.5 bg-secondary border border-input rounded-md text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-colors"
+                autoFocus
+                className="w-full px-3 py-2.5 bg-secondary border border-input rounded-md text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-colors"
                 placeholder="John Trader"
               />
             </div>
@@ -61,7 +63,7 @@ export default function Register() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="w-full px-3 py-2.5 bg-secondary border border-input rounded-md text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-colors"
+                className="w-full px-3 py-2.5 bg-secondary border border-input rounded-md text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-colors"
                 placeholder="trader@example.com"
               />
             </div>
@@ -75,7 +77,7 @@ export default function Register() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 minLength={6}
-                className="w-full px-3 py-2.5 bg-secondary border border-input rounded-md text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-colors"
+                className="w-full px-3 py-2.5 bg-secondary border border-input rounded-md text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-colors"
                 placeholder="Min. 6 characters"
               />
             </div>
@@ -91,16 +93,21 @@ export default function Register() {
               disabled={register.isPending}
               className="w-full py-2.5 px-4 bg-primary text-primary-foreground font-semibold text-sm rounded-md hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:opacity-50 transition-all glow-cyan"
             >
-              {register.isPending ? "Creating account..." : "Create Account"}
+              {register.isPending ? (
+                <span className="flex items-center justify-center gap-2">
+                  <span className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+                  Creating account...
+                </span>
+              ) : "Create Account & Get OTP"}
             </button>
           </form>
 
           <div className="mt-4 pt-4 border-t border-border text-center">
             <p className="text-xs text-muted-foreground">
               Already have an account?{" "}
-              <a href="/login" onClick={(e) => { e.preventDefault(); navigate("/login"); }} className="text-primary hover:underline">
+              <button onClick={() => navigate("/login")} className="text-primary hover:underline">
                 Sign in
-              </a>
+              </button>
             </p>
           </div>
         </div>

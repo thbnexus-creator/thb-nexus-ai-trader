@@ -1,0 +1,2 @@
+- [THB Nexus auth flow](thb-nexus-auth.md) — OTP returned in register response as `otpPreview`; verify-otp page reads it from URL query param `?otp=`
+- [THB Nexus hook pattern](thb-nexus-hooks.md) — all generated hooks require `queryKey` in the `query` option; use `getGet*QueryKey()` helpers from `@workspace/api-client-react`

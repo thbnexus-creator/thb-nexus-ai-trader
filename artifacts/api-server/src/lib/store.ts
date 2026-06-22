@@ -63,8 +63,11 @@ const ADMIN_EMAILS = ["thbnexus@gmail.com"];
 const users = new Map<string, User>();
 const botStatuses = new Map<string, BotStatus>();
 const mt5Connections = new Map<string, Mt5Connection>();
-const deposits = new Map<string, Deposit[]>();
-const trades = new Map<string, Trade[]>();
+const depositsMap = new Map<string, Deposit[]>();
+const tradesMap = new Map<string, Trade[]>();
+
+// Bot simulation timers: userId -> intervalId
+const botTimers = new Map<string, NodeJS.Timeout>();
 
 function hashPassword(password: string): string {
   return crypto.createHash("sha256").update(password + "nexus_salt").digest("hex");
@@ -76,6 +79,61 @@ function generateOtp(): string {
 
 function generateId(): string {
   return crypto.randomUUID();
+}
+
+// Reference prices for simulation
+const BASE_PRICES: Record<string, number> = {
+  EURUSD: 1.08520,
+  GBPUSD: 1.27340,
+  XAUUSD: 2328.45,
+  BTCUSD: 67234.50,
+};
+
+function simulateTrade(userId: string): void {
+  const status = botStatuses.get(userId);
+  if (!status || !status.isRunning) return;
+
+  const symbols = status.symbols.length ? status.symbols : ["EURUSD", "GBPUSD"];
+  const symbol = symbols[Math.floor(Math.random() * symbols.length)];
+  const direction = Math.random() > 0.5 ? "buy" : "sell";
+  const basePrice = BASE_PRICES[symbol] ?? 1.0;
+
+  const isCrypto = symbol === "BTCUSD";
+  const isMetal = symbol === "XAUUSD";
+  const entryPrice = parseFloat((basePrice * (1 + (Math.random() - 0.5) * 0.002)).toFixed(isCrypto || isMetal ? 2 : 5));
+
+  // Risk-adjusted P&L
+  const riskMultiplier = status.riskLevel === "High" ? 3 : status.riskLevel === "Low" ? 1 : 2;
+  const winBias = status.strategy === "Scalping" ? 0.55 : 0.52;
+  const isWin = Math.random() < winBias;
+  const pipRange = riskMultiplier * (isWin ? 1 : -1) * (5 + Math.random() * 15);
+  const profitLoss = parseFloat((pipRange * 0.1).toFixed(2));
+
+  const exitPrice = parseFloat((entryPrice * (1 + pipRange * 0.0001 * (direction === "buy" ? 1 : -1))).toFixed(isCrypto || isMetal ? 2 : 5));
+  const openedAt = new Date(Date.now() - 60000 - Math.random() * 300000).toISOString();
+  const closedAt = new Date().toISOString();
+
+  const trade: Trade = {
+    id: generateId(),
+    userId,
+    symbol,
+    direction,
+    entryPrice,
+    exitPrice,
+    lots: 0.1,
+    profitLoss,
+    status: "closed",
+    openedAt,
+    closedAt,
+  };
+
+  const existing = tradesMap.get(userId) ?? [];
+  tradesMap.set(userId, [trade, ...existing]);
+
+  // Update bot P&L and trade count
+  status.tradesExecuted += 1;
+  status.profitLoss = parseFloat((status.profitLoss + profitLoss).toFixed(2));
+  botStatuses.set(userId, { ...status });
 }
 
 export const store = {
@@ -94,6 +152,14 @@ export const store = {
       createdAt: new Date().toISOString(),
     };
     users.set(email.toLowerCase(), user);
+    return user;
+  },
+
+  refreshOtp(email: string): User {
+    const user = users.get(email.toLowerCase());
+    if (!user) throw new Error("User not found");
+    user.otp = generateOtp();
+    user.otpExpiresAt = new Date(Date.now() + 15 * 60 * 1000);
     return user;
   },
 
@@ -152,6 +218,10 @@ export const store = {
   },
 
   startBot(userId: string, strategy: string, riskLevel: string, symbols: string[]): BotStatus {
+    // Clear any existing timer
+    const existingTimer = botTimers.get(userId);
+    if (existingTimer) clearInterval(existingTimer);
+
     const status: BotStatus = {
       isRunning: true,
       strategy,
@@ -163,10 +233,22 @@ export const store = {
       status: "running",
     };
     botStatuses.set(userId, status);
-    return status;
+
+    // Simulate a trade immediately and then every 45 seconds
+    setTimeout(() => simulateTrade(userId), 2000);
+    const timer = setInterval(() => simulateTrade(userId), 45000);
+    botTimers.set(userId, timer);
+
+    return botStatuses.get(userId)!;
   },
 
   stopBot(userId: string): BotStatus {
+    const timer = botTimers.get(userId);
+    if (timer) {
+      clearInterval(timer);
+      botTimers.delete(userId);
+    }
+
     const current = store.getBotStatus(userId);
     const status: BotStatus = {
       ...current,
@@ -223,7 +305,7 @@ export const store = {
   },
 
   getDeposits(userId: string): Deposit[] {
-    return deposits.get(userId) ?? [];
+    return depositsMap.get(userId) ?? [];
   },
 
   createDeposit(userId: string, amount: number, txHash: string | null): Deposit {
@@ -236,60 +318,81 @@ export const store = {
       txHash: txHash ?? `sim_${generateId().slice(0, 16)}`,
       createdAt: new Date().toISOString(),
     };
-    const existing = deposits.get(userId) ?? [];
-    deposits.set(userId, [deposit, ...existing]);
+    const existing = depositsMap.get(userId) ?? [];
+    depositsMap.set(userId, [deposit, ...existing]);
     return deposit;
   },
 
   getBalance(userId: string): { usdt: number; totalDeposited: number; totalPnl: number } {
-    const userDeposits = deposits.get(userId) ?? [];
+    const userDeposits = depositsMap.get(userId) ?? [];
     const totalDeposited = userDeposits.reduce((sum, d) => sum + d.amount, 0);
-    const userTrades = trades.get(userId) ?? [];
+    const userTrades = tradesMap.get(userId) ?? [];
     const totalPnl = userTrades.reduce((sum, t) => sum + (t.profitLoss ?? 0), 0);
     return {
-      usdt: totalDeposited + totalPnl,
-      totalDeposited,
-      totalPnl,
+      usdt: parseFloat((totalDeposited + totalPnl).toFixed(2)),
+      totalDeposited: parseFloat(totalDeposited.toFixed(2)),
+      totalPnl: parseFloat(totalPnl.toFixed(2)),
     };
   },
 
   getTrades(userId: string): Trade[] {
-    return trades.get(userId) ?? [];
+    return tradesMap.get(userId) ?? [];
   },
 
   seedTrades(userId: string): void {
-    if ((trades.get(userId) ?? []).length > 0) return;
+    if ((tradesMap.get(userId) ?? []).length > 0) return;
     const symbols = ["EURUSD", "GBPUSD", "XAUUSD", "BTCUSD"];
     const directions = ["buy", "sell"];
     const simTrades: Trade[] = [];
-    for (let i = 0; i < 12; i++) {
+    for (let i = 0; i < 15; i++) {
       const symbol = symbols[i % symbols.length];
       const direction = directions[i % 2];
-      const entryPrice = symbol === "BTCUSD" ? 65000 + Math.random() * 5000 :
-                         symbol === "XAUUSD" ? 2300 + Math.random() * 50 :
-                         1.08 + Math.random() * 0.02;
+      const isCrypto = symbol === "BTCUSD";
+      const isMetal = symbol === "XAUUSD";
+      const base = BASE_PRICES[symbol] ?? 1.0;
+      const entryPrice = parseFloat((base * (1 + (Math.random() - 0.5) * 0.003)).toFixed(isCrypto || isMetal ? 2 : 5));
       const pips = (Math.random() - 0.4) * 200;
       const profitLoss = parseFloat((pips * 0.1).toFixed(2));
-      const openedAt = new Date(Date.now() - (12 - i) * 3600000 * 2).toISOString();
+      const openedAt = new Date(Date.now() - (15 - i) * 2 * 3600000 - Math.random() * 3600000).toISOString();
+      const closedAt = new Date(new Date(openedAt).getTime() + 900000 + Math.random() * 3600000).toISOString();
+      const exitPrice = parseFloat((entryPrice + pips * 0.0001).toFixed(isCrypto || isMetal ? 2 : 5));
       simTrades.push({
         id: generateId(),
         userId,
         symbol,
         direction,
-        entryPrice: parseFloat(entryPrice.toFixed(5)),
-        exitPrice: parseFloat((entryPrice + pips * 0.0001).toFixed(5)),
-        lots: 0.1,
+        entryPrice,
+        exitPrice,
+        lots: parseFloat((0.05 + Math.random() * 0.15).toFixed(2)),
         profitLoss,
         status: "closed",
         openedAt,
-        closedAt: new Date(new Date(openedAt).getTime() + 3600000).toISOString(),
+        closedAt,
       });
     }
-    trades.set(userId, simTrades);
+    tradesMap.set(userId, simTrades);
+  },
+
+  seedDeposits(userId: string): void {
+    if ((depositsMap.get(userId) ?? []).length > 0) return;
+    const amounts = [500, 1000];
+    const existing: Deposit[] = [];
+    for (let i = 0; i < amounts.length; i++) {
+      existing.push({
+        id: generateId(),
+        userId,
+        amount: amounts[i],
+        currency: "USDT",
+        status: "confirmed",
+        txHash: `sim_${generateId().slice(0, 16)}`,
+        createdAt: new Date(Date.now() - (2 - i) * 7 * 24 * 3600000).toISOString(),
+      });
+    }
+    depositsMap.set(userId, existing);
   },
 
   getTradeStats(userId: string) {
-    const userTrades = trades.get(userId) ?? [];
+    const userTrades = tradesMap.get(userId) ?? [];
     const closedTrades = userTrades.filter(t => t.status === "closed" && t.profitLoss !== null);
     const totalTrades = closedTrades.length;
     const winningTrades = closedTrades.filter(t => (t.profitLoss ?? 0) > 0).length;
