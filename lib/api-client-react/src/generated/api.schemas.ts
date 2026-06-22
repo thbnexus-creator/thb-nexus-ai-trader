@@ -67,6 +67,10 @@ export interface Ticker {
   low24h: number;
   volume: number;
   direction: string;
+  signal: string;
+  signalStrength: string;
+  ema5: number;
+  ema15: number;
 }
 
 export interface MarketSummary {

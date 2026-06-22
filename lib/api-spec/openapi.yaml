@@ -545,6 +545,14 @@ components:
           type: number
         direction:
           type: string
+        signal:
+          type: string
+        signalStrength:
+          type: string
+        ema5:
+          type: number
+        ema15:
+          type: number
       required:
         - symbol
         - price
@@ -554,6 +562,10 @@ components:
         - low24h
         - volume
         - direction
+        - signal
+        - signalStrength
+        - ema5
+        - ema15
 
     MarketSummary:
       type: object

@@ -111,7 +111,11 @@ export const GetMarketTickersResponseItem = zod.object({
   "high24h": zod.number(),
   "low24h": zod.number(),
   "volume": zod.number(),
-  "direction": zod.string()
+  "direction": zod.string(),
+  "signal": zod.string(),
+  "signalStrength": zod.string(),
+  "ema5": zod.number(),
+  "ema15": zod.number()
 })
 export const GetMarketTickersResponse = zod.array(GetMarketTickersResponseItem)
 
