@@ -3,13 +3,25 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: THB Nexus AI Trader API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: auth
+    description: Authentication operations
+  - name: market
+    description: Market feed operations
+  - name: bot
+    description: Trading bot operations
+  - name: mt5
+    description: MT5 bridge operations
+  - name: trades
+    description: Trade history operations
+  - name: deposits
+    description: Deposit operations
 paths:
   /healthz:
     get:
@@ -24,6 +36,381 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /auth/register:
+    post:
+      operationId: register
+      tags: [auth]
+      summary: Register a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterInput"
+      responses:
+        "201":
+          description: Registration successful, OTP sent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RegisterResult"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Email already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/verify-otp:
+    post:
+      operationId: verifyOtp
+      tags: [auth]
+      summary: Verify OTP to activate account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OtpInput"
+      responses:
+        "200":
+          description: OTP verified, account activated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResult"
+        "400":
+          description: Invalid or expired OTP
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Login with email and password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginInput"
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResult"
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Account not verified
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/logout:
+    post:
+      operationId: logout
+      tags: [auth]
+      summary: Logout current session
+      responses:
+        "200":
+          description: Logged out
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /auth/me:
+    get:
+      operationId: getMe
+      tags: [auth]
+      summary: Get current authenticated user
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /market/tickers:
+    get:
+      operationId: getMarketTickers
+      tags: [market]
+      summary: Get live market ticker data
+      responses:
+        "200":
+          description: Market tickers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Ticker"
+
+  /market/summary:
+    get:
+      operationId: getMarketSummary
+      tags: [market]
+      summary: Get market summary stats
+      responses:
+        "200":
+          description: Market summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MarketSummary"
+
+  /bot/status:
+    get:
+      operationId: getBotStatus
+      tags: [bot]
+      summary: Get trading bot status for current user
+      responses:
+        "200":
+          description: Bot status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BotStatus"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /bot/start:
+    post:
+      operationId: startBot
+      tags: [bot]
+      summary: Start the trading bot (simulation)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BotStartInput"
+      responses:
+        "200":
+          description: Bot started
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BotStatus"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /bot/stop:
+    post:
+      operationId: stopBot
+      tags: [bot]
+      summary: Stop the trading bot (simulation)
+      responses:
+        "200":
+          description: Bot stopped
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BotStatus"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /mt5/connection:
+    get:
+      operationId: getMt5Connection
+      tags: [mt5]
+      summary: Get MT5 connection status for current user
+      responses:
+        "200":
+          description: MT5 connection info
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Mt5Connection"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    post:
+      operationId: saveMt5Connection
+      tags: [mt5]
+      summary: Save MT5 broker credentials and connect
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Mt5Input"
+      responses:
+        "200":
+          description: MT5 credentials saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Mt5Connection"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /mt5/start-bridge:
+    post:
+      operationId: startMt5Bridge
+      tags: [mt5]
+      summary: Start MT5 trading bridge (simulation)
+      responses:
+        "200":
+          description: Bridge started
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Mt5Connection"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /deposits:
+    get:
+      operationId: getDeposits
+      tags: [deposits]
+      summary: Get deposit history for current user
+      responses:
+        "200":
+          description: Deposit history
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Deposit"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    post:
+      operationId: createDeposit
+      tags: [deposits]
+      summary: Create a simulated USDT deposit
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DepositInput"
+      responses:
+        "201":
+          description: Deposit created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Deposit"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /deposits/balance:
+    get:
+      operationId: getBalance
+      tags: [deposits]
+      summary: Get user USDT balance
+      responses:
+        "200":
+          description: User balance
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Balance"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /trades:
+    get:
+      operationId: getTrades
+      tags: [trades]
+      summary: Get simulated trade history for current user
+      responses:
+        "200":
+          description: Trade history
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Trade"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /trades/stats:
+    get:
+      operationId: getTradeStats
+      tags: [trades]
+      summary: Get trade performance statistics
+      responses:
+        "200":
+          description: Trade stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TradeStats"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +421,360 @@ components:
       required:
         - status
 
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+      required:
+        - success
+
+    RegisterInput:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 6
+        name:
+          type: string
+      required:
+        - email
+        - password
+        - name
+
+    RegisterResult:
+      type: object
+      properties:
+        message:
+          type: string
+        email:
+          type: string
+      required:
+        - message
+        - email
+
+    OtpInput:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        otp:
+          type: string
+          minLength: 6
+          maxLength: 6
+      required:
+        - email
+        - otp
+
+    LoginInput:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+      required:
+        - email
+        - password
+
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+        name:
+          type: string
+        isAdmin:
+          type: boolean
+        isVerified:
+          type: boolean
+        createdAt:
+          type: string
+      required:
+        - id
+        - email
+        - name
+        - isAdmin
+        - isVerified
+        - createdAt
+
+    AuthResult:
+      type: object
+      properties:
+        user:
+          $ref: "#/components/schemas/User"
+        message:
+          type: string
+      required:
+        - user
+        - message
+
+    Ticker:
+      type: object
+      properties:
+        symbol:
+          type: string
+        price:
+          type: number
+        change:
+          type: number
+        changePercent:
+          type: number
+        high24h:
+          type: number
+        low24h:
+          type: number
+        volume:
+          type: number
+        direction:
+          type: string
+      required:
+        - symbol
+        - price
+        - change
+        - changePercent
+        - high24h
+        - low24h
+        - volume
+        - direction
+
+    MarketSummary:
+      type: object
+      properties:
+        totalVolume:
+          type: number
+        bullishCount:
+          type: integer
+        bearishCount:
+          type: integer
+        lastUpdated:
+          type: string
+      required:
+        - totalVolume
+        - bullishCount
+        - bearishCount
+        - lastUpdated
+
+    BotStartInput:
+      type: object
+      properties:
+        strategy:
+          type: string
+        riskLevel:
+          type: string
+        symbols:
+          type: array
+          items:
+            type: string
+      required:
+        - strategy
+        - riskLevel
+
+    BotStatus:
+      type: object
+      properties:
+        isRunning:
+          type: boolean
+        strategy:
+          type: ["string", "null"]
+        riskLevel:
+          type: ["string", "null"]
+        symbols:
+          type: array
+          items:
+            type: string
+        tradesExecuted:
+          type: integer
+        startedAt:
+          type: ["string", "null"]
+        profitLoss:
+          type: number
+        status:
+          type: string
+      required:
+        - isRunning
+        - strategy
+        - riskLevel
+        - symbols
+        - tradesExecuted
+        - startedAt
+        - profitLoss
+        - status
+
+    Mt5Input:
+      type: object
+      properties:
+        brokerName:
+          type: string
+        loginId:
+          type: string
+        password:
+          type: string
+        server:
+          type: string
+      required:
+        - brokerName
+        - loginId
+        - password
+        - server
+
+    Mt5Connection:
+      type: object
+      properties:
+        isConnected:
+          type: boolean
+        brokerName:
+          type: ["string", "null"]
+        loginId:
+          type: ["string", "null"]
+        server:
+          type: ["string", "null"]
+        bridgeRunning:
+          type: boolean
+        connectedAt:
+          type: ["string", "null"]
+        status:
+          type: string
+      required:
+        - isConnected
+        - brokerName
+        - loginId
+        - server
+        - bridgeRunning
+        - connectedAt
+        - status
+
+    DepositInput:
+      type: object
+      properties:
+        amount:
+          type: number
+          minimum: 1
+        txHash:
+          type: ["string", "null"]
+      required:
+        - amount
+
+    Deposit:
+      type: object
+      properties:
+        id:
+          type: string
+        userId:
+          type: string
+        amount:
+          type: number
+        currency:
+          type: string
+        status:
+          type: string
+        txHash:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+      required:
+        - id
+        - userId
+        - amount
+        - currency
+        - status
+        - txHash
+        - createdAt
+
+    Balance:
+      type: object
+      properties:
+        usdt:
+          type: number
+        totalDeposited:
+          type: number
+        totalPnl:
+          type: number
+      required:
+        - usdt
+        - totalDeposited
+        - totalPnl
+
+    Trade:
+      type: object
+      properties:
+        id:
+          type: string
+        userId:
+          type: string
+        symbol:
+          type: string
+        direction:
+          type: string
+        entryPrice:
+          type: number
+        exitPrice:
+          type: ["number", "null"]
+        lots:
+          type: number
+        profitLoss:
+          type: ["number", "null"]
+        status:
+          type: string
+        openedAt:
+          type: string
+        closedAt:
+          type: ["string", "null"]
+      required:
+        - id
+        - userId
+        - symbol
+        - direction
+        - entryPrice
+        - exitPrice
+        - lots
+        - profitLoss
+        - status
+        - openedAt
+        - closedAt
+
+    TradeStats:
+      type: object
+      properties:
+        totalTrades:
+          type: integer
+        winningTrades:
+          type: integer
+        losingTrades:
+          type: integer
+        winRate:
+          type: number
+        totalPnl:
+          type: number
+        bestTrade:
+          type: number
+        worstTrade:
+          type: number
+        avgProfit:
+          type: number
+      required:
+        - totalTrades
+        - winningTrades
+        - losingTrades
+        - winRate
+        - totalPnl
+        - bestTrade
+        - worstTrade
+        - avgProfit
