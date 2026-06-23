@@ -116,7 +116,8 @@ export const GetMarketTickersResponseItem = zod.object({
   "signalStrength": zod.string(),
   "ema9": zod.number(),
   "ema100": zod.number(),
-  "rsi": zod.number()
+  "rsi": zod.number(),
+  "priceHistory": zod.array(zod.number())
 })
 export const GetMarketTickersResponse = zod.array(GetMarketTickersResponseItem)
 
@@ -292,6 +293,8 @@ export const GetTradesResponseItem = zod.object({
   "lots": zod.number(),
   "profitLoss": zod.number().nullable(),
   "status": zod.string(),
+  "strategy": zod.string().nullable(),
+  "timeframe": zod.string().nullable(),
   "openedAt": zod.string(),
   "closedAt": zod.string().nullable()
 })
@@ -425,6 +428,8 @@ export const GetAdminAllTradesResponseItem = zod.object({
   "lots": zod.number(),
   "profitLoss": zod.number().nullable(),
   "status": zod.string(),
+  "strategy": zod.string().nullable(),
+  "timeframe": zod.string().nullable(),
   "openedAt": zod.string(),
   "closedAt": zod.string().nullable()
 })
@@ -444,5 +449,21 @@ export const GetAdminAllDepositsResponseItem = zod.object({
   "createdAt": zod.string()
 })
 export const GetAdminAllDepositsResponse = zod.array(GetAdminAllDepositsResponseItem)
+
+
+/**
+ * @summary Signal history log (last 80 signals)
+ */
+export const GetSignalHistoryResponseItem = zod.object({
+  "symbol": zod.string(),
+  "signal": zod.string(),
+  "signalStrength": zod.string(),
+  "rsi": zod.number(),
+  "ema9": zod.number(),
+  "ema100": zod.number(),
+  "price": zod.number(),
+  "timestamp": zod.string()
+})
+export const GetSignalHistoryResponse = zod.array(GetSignalHistoryResponseItem)
 
 

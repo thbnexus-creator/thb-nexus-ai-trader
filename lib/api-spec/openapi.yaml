@@ -568,6 +568,21 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /market/signal-history:
+    get:
+      operationId: getSignalHistory
+      tags: [market]
+      summary: Signal history log (last 80 signals)
+      responses:
+        "200":
+          description: Signal records
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SignalRecord"
+
 components:
   schemas:
     HealthStatus:
@@ -712,6 +727,10 @@ components:
           type: number
         rsi:
           type: number
+        priceHistory:
+          type: array
+          items:
+            type: number
       required:
         - symbol
         - price
@@ -726,6 +745,36 @@ components:
         - ema9
         - ema100
         - rsi
+        - priceHistory
+
+    SignalRecord:
+      type: object
+      properties:
+        symbol:
+          type: string
+        signal:
+          type: string
+        signalStrength:
+          type: string
+        rsi:
+          type: number
+        ema9:
+          type: number
+        ema100:
+          type: number
+        price:
+          type: number
+        timestamp:
+          type: string
+      required:
+        - symbol
+        - signal
+        - signalStrength
+        - rsi
+        - ema9
+        - ema100
+        - price
+        - timestamp
 
     MarketSummary:
       type: object
@@ -916,6 +965,10 @@ components:
           type: ["number", "null"]
         status:
           type: string
+        strategy:
+          type: ["string", "null"]
+        timeframe:
+          type: ["string", "null"]
         openedAt:
           type: string
         closedAt:
@@ -930,6 +983,8 @@ components:
         - lots
         - profitLoss
         - status
+        - strategy
+        - timeframe
         - openedAt
         - closedAt
 

@@ -72,6 +72,18 @@ export interface Ticker {
   ema9: number;
   ema100: number;
   rsi: number;
+  priceHistory: number[];
+}
+
+export interface SignalRecord {
+  symbol: string;
+  signal: string;
+  signalStrength: string;
+  rsi: number;
+  ema9: number;
+  ema100: number;
+  price: number;
+  timestamp: string;
 }
 
 export interface MarketSummary {
@@ -163,6 +175,10 @@ export interface Trade {
   /** @nullable */
   profitLoss: number | null;
   status: string;
+  /** @nullable */
+  strategy: string | null;
+  /** @nullable */
+  timeframe: string | null;
   openedAt: string;
   /** @nullable */
   closedAt: string | null;

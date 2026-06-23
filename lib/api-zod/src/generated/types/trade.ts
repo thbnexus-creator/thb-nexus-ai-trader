@@ -18,6 +18,10 @@ export interface Trade {
   /** @nullable */
   profitLoss: number | null;
   status: string;
+  /** @nullable */
+  strategy: string | null;
+  /** @nullable */
+  timeframe: string | null;
   openedAt: string;
   /** @nullable */
   closedAt: string | null;

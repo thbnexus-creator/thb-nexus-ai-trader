@@ -6,19 +6,13 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface Ticker {
+export interface SignalRecord {
   symbol: string;
-  price: number;
-  change: number;
-  changePercent: number;
-  high24h: number;
-  low24h: number;
-  volume: number;
-  direction: string;
   signal: string;
   signalStrength: string;
+  rsi: number;
   ema9: number;
   ema100: number;
-  rsi: number;
-  priceHistory: number[];
+  price: number;
+  timestamp: string;
 }

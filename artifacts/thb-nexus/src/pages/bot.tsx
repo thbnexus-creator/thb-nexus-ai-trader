@@ -1,6 +1,10 @@
 import { useState } from "react";
-import { useGetBotStatus, useStartBot, useStopBot, getGetBotStatusQueryKey } from "@workspace/api-client-react";
+import {
+  useGetBotStatus, useStartBot, useStopBot, getGetBotStatusQueryKey,
+  useGetMt5Connection, getGetMt5ConnectionQueryKey,
+} from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { Link } from "wouter";
 import { Layout } from "@/components/layout";
 
 const STRATEGIES = [
@@ -27,6 +31,7 @@ const SYMBOLS = ["EURUSD", "GBPUSD", "XAUUSD", "BTCUSD"];
 export default function BotPage() {
   const queryClient = useQueryClient();
   const { data: botStatus } = useGetBotStatus({ query: { refetchInterval: 2000, queryKey: getGetBotStatusQueryKey() } });
+  const { data: mt5 } = useGetMt5Connection({ query: { refetchInterval: 10000, queryKey: getGetMt5ConnectionQueryKey() } });
   const startBot = useStartBot();
   const stopBot = useStopBot();
 
@@ -69,13 +74,65 @@ export default function BotPage() {
   }
 
   const isRunning = botStatus?.isRunning ?? false;
+  const mt5Connected = mt5?.isConnected ?? false;
+  const mt5BridgeActive = mt5?.bridgeRunning ?? false;
 
   return (
     <Layout>
       <div className="p-4 sm:p-5 space-y-4 max-w-2xl mx-auto">
         <div>
           <h1 className="text-base font-bold text-foreground">Trading Bot</h1>
-          <p className="text-[11px] text-muted-foreground mt-0.5">Strategy engine — EMA9 / EMA100 / RSI4 analysis (simulation)</p>
+          <p className="text-[11px] text-muted-foreground mt-0.5">Strategy engine — EMA9 / EMA100 / RSI4 analysis (simulation only)</p>
+        </div>
+
+        {/* MT5 Connection Status Panel */}
+        <div className={`rounded-xl border p-4 ${mt5Connected ? "bg-chart-2/6 border-chart-2/25" : "bg-muted/10 border-border"}`}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 text-lg ${mt5Connected ? "bg-chart-2/20 border border-chart-2/30" : "bg-muted border border-border"}`}>
+                ⬡
+              </div>
+              <div>
+                <div className="text-sm font-semibold text-foreground">
+                  MT5 Bridge — {mt5Connected ? (mt5?.brokerName ?? "Connected") : "Not Connected"}
+                </div>
+                <div className="text-[10px] text-muted-foreground mt-0.5">
+                  {mt5Connected
+                    ? `${mt5?.server} · Bridge ${mt5BridgeActive ? "Active" : "Idle"} · Simulation mode`
+                    : "Connect your MT5 account to enable bridge integration"}
+                </div>
+              </div>
+            </div>
+            <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
+              <span className={`text-[9px] font-black px-2 py-1 rounded-full border uppercase tracking-wider ${mt5Connected ? "bg-chart-2/15 text-chart-2 border-chart-2/25" : "bg-muted/50 text-muted-foreground border-border"}`}>
+                {mt5Connected ? (mt5BridgeActive ? "Bridge Active" : "Connected") : "Offline"}
+              </span>
+              {!mt5Connected && (
+                <Link href="/mt5" className="text-[9px] font-bold text-primary hover:underline">
+                  Connect MT5 →
+                </Link>
+              )}
+            </div>
+          </div>
+
+          {mt5Connected && (
+            <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-chart-2/15 text-[10px] text-center">
+              <div>
+                <div className="text-muted-foreground mb-0.5">Broker</div>
+                <div className="font-semibold text-foreground text-xs">{mt5?.brokerName}</div>
+              </div>
+              <div>
+                <div className="text-muted-foreground mb-0.5">Server</div>
+                <div className="font-semibold text-foreground text-xs truncate">{mt5?.server}</div>
+              </div>
+              <div>
+                <div className="text-muted-foreground mb-0.5">Bridge</div>
+                <div className={`font-bold text-xs ${mt5BridgeActive ? "text-primary" : "text-muted-foreground"}`}>
+                  {mt5BridgeActive ? "⚡ Active" : "Idle"}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Toast */}
@@ -86,7 +143,7 @@ export default function BotPage() {
           </div>
         )}
 
-        {/* Status card */}
+        {/* Bot status card */}
         <div className={`rounded-xl border p-4 transition-all ${isRunning ? "bg-chart-2/8 border-chart-2/30" : "bg-card border-card-border"}`}>
           <div className="flex items-center gap-3">
             <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 text-2xl ${isRunning ? "bg-chart-2/20 border border-chart-2/30" : "bg-muted border border-border"}`}>
@@ -121,7 +178,7 @@ export default function BotPage() {
               </div>
               <div className="text-center">
                 <div className="text-xl font-bold font-mono text-chart-4">{botStatus?.winStreak ?? 0}</div>
-                <div className="text-[8px] text-muted-foreground uppercase tracking-wider mt-0.5">Win Streak</div>
+                <div className="text-[8px] text-muted-foreground uppercase tracking-wider mt-0.5">Streak</div>
               </div>
               <div className="text-center">
                 <div className="text-base font-bold text-foreground font-mono">{botStatus?.currentLot?.toFixed(2) ?? "0.01"}</div>
@@ -135,7 +192,7 @@ export default function BotPage() {
         <div className="bg-card border border-card-border rounded-xl p-4 space-y-5">
           <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Bot Configuration</div>
 
-          {/* Timeframe — NEW */}
+          {/* Timeframe */}
           <div>
             <div className="text-xs font-semibold text-muted-foreground mb-2.5 uppercase tracking-wider">Timeframe</div>
             <div className="grid grid-cols-3 gap-2">
@@ -225,24 +282,24 @@ export default function BotPage() {
 
         {/* Strategy engine info */}
         <div className="bg-card border border-card-border rounded-xl p-4">
-          <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-3">Strategy Engine — Signal Logic</div>
+          <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-3">Signal Logic — EMA9 · EMA100 · RSI4</div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-[11px]">
             <div className="p-3 bg-chart-2/8 border border-chart-2/20 rounded-xl">
               <div className="font-bold text-chart-2 mb-1.5">BUY Conditions</div>
               <ul className="space-y-1 text-muted-foreground">
-                <li>• Price above EMA 100</li>
-                <li>• EMA 9 trending upward</li>
-                <li>• RSI 4 below 40 with hook up</li>
-                <li>• TP: +3–6 pips</li>
+                <li>• Price above EMA100</li>
+                <li>• EMA9 trending upward</li>
+                <li>• RSI4 below 35 with hook up</li>
+                <li>• TP: +3–6 pips · SL: −3–6 pips</li>
               </ul>
             </div>
             <div className="p-3 bg-destructive/8 border border-destructive/20 rounded-xl">
               <div className="font-bold text-destructive mb-1.5">SELL Conditions</div>
               <ul className="space-y-1 text-muted-foreground">
-                <li>• Price below EMA 100</li>
-                <li>• EMA 9 trending downward</li>
-                <li>• RSI 4 above 60 with hook down</li>
-                <li>• SL: −3–6 pips</li>
+                <li>• Price below EMA100</li>
+                <li>• EMA9 trending downward</li>
+                <li>• RSI4 above 65 with hook down</li>
+                <li>• TP: +3–6 pips · SL: −3–6 pips</li>
               </ul>
             </div>
           </div>
@@ -264,7 +321,7 @@ export default function BotPage() {
           <button
             onClick={handleStart}
             disabled={startBot.isPending || isRunning}
-            className="py-4 rounded-xl text-sm font-bold bg-chart-2 text-white hover:bg-chart-2/90 disabled:opacity-40 disabled:cursor-not-allowed transition-all active:scale-[0.97] glow-green flex items-center justify-center gap-2"
+            className="py-4 rounded-xl text-sm font-bold bg-chart-2 text-white hover:bg-chart-2/90 disabled:opacity-40 disabled:cursor-not-allowed transition-all active:scale-[0.97] flex items-center justify-center gap-2"
           >
             {startBot.isPending ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : "⚡"}
             {startBot.isPending ? "Starting..." : "Start Bot"}
@@ -280,7 +337,7 @@ export default function BotPage() {
         </div>
 
         <div className="bg-muted/20 border border-border rounded-xl px-4 py-3 text-[11px] text-muted-foreground">
-          <strong className="text-foreground">Simulation only.</strong> All trades and signals are analysis-based demos. No real funds at risk. System is architected for future VPS Python MT5 real broker integration.
+          <strong className="text-foreground">Simulation only.</strong> No real funds are at risk. All trades are analysis-based demos. Architecture is ready for future VPS Python MT5 real broker integration.
         </div>
       </div>
     </Layout>

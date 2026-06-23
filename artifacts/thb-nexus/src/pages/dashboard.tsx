@@ -1,8 +1,8 @@
-import { useGetMarketTickers, getGetMarketTickersQueryKey, useGetMarketSummary, getGetMarketSummaryQueryKey, useGetBotStatus, getGetBotStatusQueryKey, useGetBalance, getGetBalanceQueryKey, useGetTradeStats, getGetTradeStatsQueryKey, Ticker } from "@workspace/api-client-react";
+import { useGetMarketTickers, getGetMarketTickersQueryKey, useGetMarketSummary, getGetMarketSummaryQueryKey, useGetBotStatus, getGetBotStatusQueryKey, useGetBalance, getGetBalanceQueryKey, useGetTradeStats, getGetTradeStatsQueryKey, useGetSignalHistory, getGetSignalHistoryQueryKey, Ticker } from "@workspace/api-client-react";
 import { Layout } from "@/components/layout";
 import { Link } from "wouter";
 
-function SignalBadge({ signal, strength }: { signal: string; strength: string }) {
+function SignalBadge({ signal }: { signal: string }) {
   const cls = signal === "BUY"
     ? "bg-chart-2/15 text-chart-2 border-chart-2/30"
     : signal === "SELL"
@@ -17,24 +17,40 @@ function SignalBadge({ signal, strength }: { signal: string; strength: string })
   );
 }
 
+function Sparkline({ prices, isUp }: { prices: number[]; isUp: boolean }) {
+  if (prices.length < 2) return null;
+  const min = Math.min(...prices);
+  const max = Math.max(...prices);
+  const range = max - min || 1;
+  const w = 80;
+  const h = 28;
+  const pts = prices.map((p, i) => {
+    const x = (i / (prices.length - 1)) * w;
+    const y = h - ((p - min) / range) * h;
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(" ");
+  const color = isUp ? "#22d3a5" : "#f43f5e";
+  return (
+    <svg width={w} height={h} className="flex-shrink-0">
+      <polyline points={pts} fill="none" stroke={color} strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" opacity="0.8" />
+    </svg>
+  );
+}
+
 function RsiBar({ rsi }: { rsi: number }) {
   const color = rsi > 70 ? "bg-destructive" : rsi < 30 ? "bg-chart-2" : "bg-chart-4";
   const zone = rsi > 70 ? "text-destructive" : rsi < 30 ? "text-chart-2" : "text-chart-4";
-  const label = rsi > 70 ? "Overbought" : rsi < 30 ? "Oversold" : "Neutral";
+  const label = rsi > 70 ? "OB" : rsi < 30 ? "OS" : "Neut";
   return (
     <div>
       <div className="flex justify-between items-center mb-1">
         <span className="text-[9px] text-muted-foreground">RSI4</span>
-        <span className={`text-[9px] font-bold ${zone}`}>{rsi.toFixed(1)} · {label}</span>
+        <span className={`text-[9px] font-bold ${zone}`}>{rsi.toFixed(0)} · {label}</span>
       </div>
       <div className="h-1.5 bg-muted rounded-full overflow-hidden relative">
-        {/* 30 / 70 zone markers */}
         <div className="absolute top-0 left-[30%] w-px h-full bg-chart-2/40" />
         <div className="absolute top-0 left-[70%] w-px h-full bg-destructive/40" />
-        <div
-          className={`h-full ${color} rounded-full transition-all duration-700`}
-          style={{ width: `${Math.min(rsi, 100)}%` }}
-        />
+        <div className={`h-full ${color} rounded-full transition-all duration-700`} style={{ width: `${Math.min(rsi, 100)}%` }} />
       </div>
     </div>
   );
@@ -56,21 +72,22 @@ function MarketCard({ t }: { t: Ticker }) {
           </div>
         </div>
         <div className="flex flex-col items-end gap-1.5">
-          <div className={`w-2 h-2 rounded-full pulse-dot ${isUp ? "bg-chart-2 glow-green" : "bg-destructive glow-red"}`} />
-          <SignalBadge signal={t.signal} strength={t.signalStrength} />
+          <div className={`w-2 h-2 rounded-full pulse-dot ${isUp ? "bg-chart-2" : "bg-destructive"}`} />
+          <SignalBadge signal={t.signal} />
         </div>
       </div>
 
-      <div className={`text-2xl font-bold font-mono mb-3 ${isUp ? "text-profit" : "text-loss"}`}>
-        {t.price.toFixed(dp)}
+      <div className="flex items-end justify-between mb-3">
+        <div className={`text-2xl font-bold font-mono ${isUp ? "text-profit" : "text-loss"}`}>
+          {t.price.toFixed(dp)}
+        </div>
+        <Sparkline prices={t.priceHistory} isUp={isUp} />
       </div>
 
-      {/* RSI bar */}
       <div className="mb-3">
         <RsiBar rsi={t.rsi} />
       </div>
 
-      {/* 24h range */}
       <div className="mb-2">
         <div className="h-1.5 bg-muted rounded-full overflow-hidden">
           <div
@@ -93,19 +110,19 @@ function MarketCard({ t }: { t: Ticker }) {
   );
 }
 
-function SignalsPanel({ tickers }: { tickers: Ticker[] }) {
+function SignalAnalysisPanel({ tickers }: { tickers: Ticker[] }) {
   return (
     <div className="bg-card border border-card-border rounded-xl p-4">
       <div className="flex items-center gap-2 mb-4">
         <span className="w-1.5 h-1.5 rounded-full bg-primary pulse-dot" />
         <h2 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex-1">AI Signal Analysis — EMA9 · EMA100 · RSI4</h2>
-        <span className="text-[9px] text-muted-foreground">Demo only</span>
+        <span className="text-[9px] text-muted-foreground">Live</span>
       </div>
       <div className="space-y-3">
         {tickers.map((t) => {
           const dp = t.symbol === "BTCUSD" || t.symbol === "XAUUSD" ? 2 : 5;
           const isUp = t.direction === "up";
-          const conf = t.signalStrength === "strong" ? 82 : t.signalStrength === "moderate" ? 58 : 34;
+          const conf = t.signalStrength === "strong" ? 85 : t.signalStrength === "moderate" ? 60 : 35;
           const barColor = t.signal === "BUY" ? "bg-chart-2" : t.signal === "SELL" ? "bg-destructive" : "bg-chart-4";
           const ema9AboveEma100 = t.ema9 > t.ema100;
 
@@ -125,17 +142,75 @@ function SignalsPanel({ tickers }: { tickers: Ticker[] }) {
                     <div className={`h-full rounded-full transition-all duration-700 ${barColor}`} style={{ width: `${conf}%` }} />
                   </div>
                 </div>
-                <SignalBadge signal={t.signal} strength={t.signalStrength} />
+                <SignalBadge signal={t.signal} />
               </div>
               <div className="grid grid-cols-3 gap-2 text-[9px] text-muted-foreground">
                 <span>RSI4: <span className={t.rsi < 30 ? "text-chart-2 font-bold" : t.rsi > 70 ? "text-destructive font-bold" : "text-foreground"}>{t.rsi.toFixed(1)}</span></span>
-                <span>EMA9: <span className={ema9AboveEma100 ? "text-chart-2" : "text-destructive"}>{t.ema9 > t.ema100 ? "▲ Above" : "▼ Below"} EMA100</span></span>
+                <span>EMA9: <span className={ema9AboveEma100 ? "text-chart-2" : "text-destructive"}>{ema9AboveEma100 ? "▲ Above" : "▼ Below"} EMA100</span></span>
                 <span>Bias: <span className={t.signal === "BUY" ? "text-chart-2" : t.signal === "SELL" ? "text-destructive" : "text-chart-4"}>{t.signal}</span></span>
               </div>
             </div>
           );
         })}
       </div>
+    </div>
+  );
+}
+
+function SignalHistoryPanel() {
+  const { data: history = [] } = useGetSignalHistory({ query: { refetchInterval: 15000, queryKey: getGetSignalHistoryQueryKey() } });
+
+  const grouped = ["EURUSD", "GBPUSD", "XAUUSD", "BTCUSD"].map(sym => ({
+    symbol: sym,
+    records: history.filter(h => h.symbol === sym).slice(0, 8),
+  }));
+
+  return (
+    <div className="bg-card border border-card-border rounded-xl p-4">
+      <div className="flex items-center gap-2 mb-4">
+        <h2 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex-1">Signal History — Last 8 per Symbol</h2>
+        <span className="text-[9px] text-muted-foreground">~12s intervals</span>
+      </div>
+
+      {history.length === 0 ? (
+        <div className="py-6 text-center text-sm text-muted-foreground">
+          <div className="text-2xl mb-2 opacity-20">◈</div>
+          Signal history builds after ~12 seconds of market activity
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+          {grouped.map(({ symbol, records }) => (
+            <div key={symbol} className="bg-secondary/30 rounded-xl border border-border overflow-hidden">
+              <div className="px-3 py-2 border-b border-border bg-muted/20">
+                <span className="text-[10px] font-bold text-foreground font-mono">{symbol}</span>
+              </div>
+              {records.length === 0 ? (
+                <div className="px-3 py-4 text-[10px] text-muted-foreground">No signals yet</div>
+              ) : (
+                <div className="divide-y divide-border">
+                  {records.map((r, i) => {
+                    const dp = r.symbol === "BTCUSD" || r.symbol === "XAUUSD" ? 2 : 5;
+                    const signalColor = r.signal === "BUY" ? "text-chart-2" : r.signal === "SELL" ? "text-destructive" : "text-chart-4";
+                    const time = new Date(r.timestamp);
+                    return (
+                      <div key={i} className="px-3 py-2 flex items-center justify-between">
+                        <div>
+                          <span className={`text-[9px] font-black ${signalColor}`}>{r.signal}</span>
+                          <span className="text-[9px] text-muted-foreground ml-1.5">{r.price.toFixed(dp)}</span>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-[9px] text-muted-foreground">{time.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}</div>
+                          <div className="text-[8px] text-muted-foreground/60">RSI {r.rsi.toFixed(0)}</div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -152,7 +227,7 @@ export default function Dashboard() {
   return (
     <Layout>
       {/* Live ticker banner */}
-      <div className="border-b border-border bg-card/50 overflow-x-auto px-4 py-2">
+      <div className="border-b border-border bg-card/50 overflow-x-auto px-4 py-2 flex-shrink-0">
         <div className="flex items-center gap-4 min-w-max">
           <div className="flex items-center gap-1.5 flex-shrink-0">
             <span className="w-1.5 h-1.5 bg-chart-2 rounded-full pulse-dot" />
@@ -166,7 +241,7 @@ export default function Dashboard() {
                 <span className="text-[10px] font-bold text-muted-foreground">{t.symbol}</span>
                 <span className="text-[12px] font-bold font-mono text-foreground">{t.price.toFixed(dp)}</span>
                 <span className={`text-[10px] font-bold ${isUp ? "text-profit" : "text-loss"}`}>{isUp ? "▲" : "▼"}{Math.abs(t.changePercent).toFixed(3)}%</span>
-                <SignalBadge signal={t.signal} strength={t.signalStrength} />
+                <SignalBadge signal={t.signal} />
                 <span className={`text-[9px] font-mono ${t.rsi < 30 ? "text-chart-2" : t.rsi > 70 ? "text-destructive" : "text-muted-foreground"}`}>
                   RSI {t.rsi.toFixed(0)}
                 </span>
@@ -222,15 +297,18 @@ export default function Dashboard() {
         <div>
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Market Watch</h2>
-            <span className="text-[9px] text-muted-foreground">~900ms updates</span>
+            <span className="text-[9px] text-muted-foreground">~900ms · sparklines</span>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
             {tickers.map((t) => <MarketCard key={t.symbol} t={t} />)}
           </div>
         </div>
 
-        {/* Signal analysis */}
-        <SignalsPanel tickers={tickers} />
+        {/* Live signal analysis */}
+        <SignalAnalysisPanel tickers={tickers} />
+
+        {/* Signal history */}
+        <SignalHistoryPanel />
 
         {/* Bot + Sentiment */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">

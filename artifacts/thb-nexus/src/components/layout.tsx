@@ -5,14 +5,23 @@ import { useGetMarketTickers, getGetMarketTickersQueryKey, useLogout } from "@wo
 import { useQueryClient } from "@tanstack/react-query";
 
 const NAV_ITEMS = [
-  { href: "/dashboard", label: "Dashboard",     icon: "◈" },
-  { href: "/bot",       label: "Trading Bot",   icon: "⚡" },
-  { href: "/mt5",       label: "MT5 Bridge",    icon: "⬡" },
-  { href: "/deposits",  label: "Deposits",      icon: "◎" },
-  { href: "/trades",    label: "Trade History", icon: "▤" },
-  { href: "/settings",  label: "Settings",      icon: "⚙" },
+  { href: "/dashboard", label: "Dashboard",     icon: "◈", mobileIcon: "◈" },
+  { href: "/bot",       label: "Trading Bot",   icon: "⚡", mobileIcon: "⚡" },
+  { href: "/mt5",       label: "MT5 Bridge",    icon: "⬡", mobileIcon: "⬡" },
+  { href: "/deposits",  label: "Deposits",      icon: "◎", mobileIcon: "◎" },
+  { href: "/trades",    label: "Trade History", icon: "▤", mobileIcon: "▤" },
+  { href: "/settings",  label: "Settings",      icon: "⚙", mobileIcon: "⚙" },
 ];
-const ADMIN_NAV = { href: "/admin", label: "Admin Panel", icon: "⚑" };
+const ADMIN_NAV = { href: "/admin", label: "Admin Panel", icon: "⚑", mobileIcon: "⚑" };
+
+// Mobile bottom nav shows only the 5 most important items
+const MOBILE_BOTTOM_NAV = [
+  { href: "/dashboard", label: "Dashboard", icon: "◈" },
+  { href: "/bot",       label: "Bot",       icon: "⚡" },
+  { href: "/mt5",       label: "MT5",       icon: "⬡" },
+  { href: "/trades",    label: "Trades",    icon: "▤" },
+  { href: "/settings",  label: "Settings",  icon: "⚙" },
+];
 
 function NavLink({ href, label, icon, onClick, badge }: { href: string; label: string; icon: string; onClick?: () => void; badge?: string }) {
   const [isActive] = useRoute(href);
@@ -34,13 +43,27 @@ function NavLink({ href, label, icon, onClick, badge }: { href: string; label: s
   );
 }
 
+function BottomNavItem({ href, label, icon }: { href: string; label: string; icon: string }) {
+  const [isActive] = useRoute(href);
+  return (
+    <Link
+      href={href}
+      className={`flex flex-col items-center justify-center gap-0.5 py-2 flex-1 transition-all active:scale-95 ${
+        isActive ? "text-primary" : "text-muted-foreground"
+      }`}
+    >
+      <span className={`text-lg leading-none ${isActive ? "text-primary" : "opacity-50"}`}>{icon}</span>
+      <span className={`text-[9px] font-semibold ${isActive ? "text-primary" : ""}`}>{label}</span>
+      {isActive && <span className="w-1 h-1 rounded-full bg-primary mt-0.5" />}
+    </Link>
+  );
+}
+
 function MiniTickers() {
   const { data: tickers } = useGetMarketTickers({
     query: { refetchInterval: 1500, queryKey: getGetMarketTickersQueryKey() },
   });
-
   if (!tickers?.length) return null;
-
   return (
     <div className="space-y-2 px-1">
       {tickers.map((t) => {
@@ -74,11 +97,7 @@ function DrawerContent({ onClose }: { onClose: () => void }) {
 
   function handleLogout() {
     logout.mutate(undefined, {
-      onSuccess: () => {
-        queryClient.clear();
-        onClose();
-        navigate("/login");
-      },
+      onSuccess: () => { queryClient.clear(); onClose(); navigate("/login"); },
     });
   }
 
@@ -188,6 +207,20 @@ function MobileHeader({ onMenuOpen }: { onMenuOpen: () => void }) {
   );
 }
 
+function MobileBottomNav() {
+  const { user } = useAuth();
+  return (
+    <nav className="flex-shrink-0 h-16 bg-sidebar border-t border-border flex items-stretch safe-area-inset-bottom md:hidden">
+      {MOBILE_BOTTOM_NAV.map((item) => (
+        <BottomNavItem key={item.href} {...item} />
+      ))}
+      {user?.isAdmin && (
+        <BottomNavItem href="/admin" label="Admin" icon="⚑" />
+      )}
+    </nav>
+  );
+}
+
 function DesktopSidebar() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -269,6 +302,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex h-screen bg-background overflow-hidden">
+      {/* Desktop sidebar */}
       <div className="hidden md:flex">
         <DesktopSidebar />
       </div>
@@ -280,20 +314,27 @@ export function Layout({ children }: { children: React.ReactNode }) {
         aria-hidden="true"
       />
 
-      {/* Mobile drawer */}
+      {/* Mobile slide-in drawer */}
       <div
         className={`fixed top-0 left-0 bottom-0 z-50 w-72 shadow-2xl transition-transform duration-300 ease-in-out md:hidden ${drawerOpen ? "translate-x-0" : "-translate-x-full"}`}
       >
         <DrawerContent onClose={() => setDrawerOpen(false)} />
       </div>
 
+      {/* Main content area */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        {/* Mobile top header (hamburger + logo + BTC ticker) */}
         <div className="md:hidden">
           <MobileHeader onMenuOpen={() => setDrawerOpen(true)} />
         </div>
+
+        {/* Page content */}
         <main className="flex-1 overflow-y-auto">
           {children}
         </main>
+
+        {/* Mobile bottom navigation bar */}
+        <MobileBottomNav />
       </div>
     </div>
   );

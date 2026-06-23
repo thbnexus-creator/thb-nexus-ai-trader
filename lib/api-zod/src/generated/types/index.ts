@@ -25,6 +25,7 @@ export * from './mt5Input';
 export * from './otpInput';
 export * from './registerInput';
 export * from './registerResult';
+export * from './signalRecord';
 export * from './successResponse';
 export * from './ticker';
 export * from './trade';

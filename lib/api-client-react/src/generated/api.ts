@@ -39,6 +39,7 @@ import type {
   OtpInput,
   RegisterInput,
   RegisterResult,
+  SignalRecord,
   SuccessResponse,
   Ticker,
   Trade,
@@ -1979,6 +1980,83 @@ export function useGetAdminAllDeposits<TData = Awaited<ReturnType<typeof getAdmi
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetAdminAllDepositsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetSignalHistoryUrl = () => {
+
+
+
+
+  return `/api/market/signal-history`
+}
+
+/**
+ * @summary Signal history log (last 80 signals)
+ */
+export const getSignalHistory = async ( options?: RequestInit): Promise<SignalRecord[]> => {
+
+  return customFetch<SignalRecord[]>(getGetSignalHistoryUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSignalHistoryQueryKey = () => {
+    return [
+    `/api/market/signal-history`
+    ] as const;
+    }
+
+
+export const getGetSignalHistoryQueryOptions = <TData = Awaited<ReturnType<typeof getSignalHistory>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSignalHistory>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSignalHistoryQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSignalHistory>>> = ({ signal }) => getSignalHistory({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSignalHistory>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetSignalHistoryQueryResult = NonNullable<Awaited<ReturnType<typeof getSignalHistory>>>
+export type GetSignalHistoryQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Signal history log (last 80 signals)
+ */
+
+export function useGetSignalHistory<TData = Awaited<ReturnType<typeof getSignalHistory>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSignalHistory>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetSignalHistoryQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

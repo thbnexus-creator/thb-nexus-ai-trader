@@ -22,7 +22,7 @@ router.get("/admin/users", requireAuth, requireAdmin, async (req, res): Promise<
 
 router.post("/admin/users/:userId/toggle", requireAuth, requireAdmin, async (req, res): Promise<void> => {
   try {
-    const updated = store.toggleUserActive(req.params.userId);
+    const updated = store.toggleUserActive(String(req.params.userId));
     res.json(updated);
   } catch (err: any) {
     res.status(404).json({ error: err.message });
